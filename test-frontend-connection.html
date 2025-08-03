@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend-Backend Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        .categories {
+            margin-top: 20px;
+        }
+        .category-item {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hotel Inventory - Frontend-Backend Connection Test</h1>
+    
+    <h2>Create New Category</h2>
+    <form id="categoryForm">
+        <div class="form-group">
+            <label for="categoryName">Category Name:</label>
+            <input type="text" id="categoryName" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="categoryDescription">Description:</label>
+            <textarea id="categoryDescription" name="description" rows="3"></textarea>
+        </div>
+        <button type="submit">Create Category</button>
+        <button type="button" onclick="loadCategories()">Refresh Categories</button>
+    </form>
+
+    <div id="result"></div>
+
+    <div class="categories">
+        <h2>Existing Categories</h2>
+        <div id="categoriesList">Loading categories...</div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8082/api';
+
+        async function apiRequest(endpoint, options = {}) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+                ...options,
+            };
+
+            try {
+                const response = await fetch(url, config);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API request failed:', error);
+                throw error;
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                const categories = await apiRequest('/categories');
+                const categoriesList = document.getElementById('categoriesList');
+                
+                if (categories.length === 0) {
+                    categoriesList.innerHTML = '<p>No categories found.</p>';
+                } else {
+                    categoriesList.innerHTML = categories.map(category => `
+                        <div class="category-item">
+                            <strong>${category.name}</strong>
+                            ${category.description ? `<br><small>${category.description}</small>` : ''}
+                            <br><small>ID: ${category.id} | Created: ${new Date(category.createdAt).toLocaleString()}</small>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                document.getElementById('categoriesList').innerHTML = `<p style="color: red;">Error loading categories: ${error.message}</p>`;
+            }
+        }
+
+        async function createCategory(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const categoryData = {
+                name: formData.get('name'),
+                description: formData.get('description') || null
+            };
+
+            try {
+                const result = await apiRequest('/categories', {
+                    method: 'POST',
+                    body: JSON.stringify(categoryData)
+                });
+
+                document.getElementById('result').innerHTML = `
+                    <p style="color: green;">✅ Category created successfully!</p>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+                
+                // Reset form and reload categories
+                event.target.reset();
+                loadCategories();
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <p style="color: red;">❌ Error creating category: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Event listeners
+        document.getElementById('categoryForm').addEventListener('submit', createCategory);
+
+        // Load categories on page load
+        window.addEventListener('load', loadCategories);
+    </script>
+</body>
+</html>
