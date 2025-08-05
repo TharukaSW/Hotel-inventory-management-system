@@ -1,0 +1,8 @@
+{
+  "username": "testuser",
+  "email": "test@hotel.com",
+  "password": "password123",
+  "firstName": "Test",
+  "lastName": "User",
+  "role": "FRONT_DESK"
+}

@@ -7,32 +7,25 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CreateUserRequest {
+public class UpdateUserRequest {
     
-    @NotBlank(message = "Username is required")
     private String username;
     
-    @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     private String email;
     
-    @NotBlank(message = "Password is required")
     private String password;
     
     private String firstName;
     
     private String lastName;
     
-    @NotNull(message = "Role is required")
     private User.UserRole role;
     
-    @Builder.Default
-    private boolean isActive = true;
+    private Boolean isActive;
 }

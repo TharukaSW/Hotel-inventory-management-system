@@ -12,6 +12,14 @@ const InventoryManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    categoryId: 0,
+    quantity: 0,
+    price: 0,
+    status: 'IN_STOCK',
+    supplierId: 0
+  });
 
   useEffect(() => {
     fetchData();
@@ -49,6 +57,37 @@ const InventoryManagement: React.FC = () => {
         console.error('Error deleting item:', error);
       }
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingItem) {
+        const updatedItem = await apiService.updateInventoryItem(editingItem.id, formData);
+        setItems(items.map(item => item.id === editingItem.id ? updatedItem : item));
+        setEditingItem(null);
+      } else {
+        const newItem = await apiService.createInventoryItem(formData);
+        setItems([...items, newItem]);
+      }
+      setFormData({ name: '', categoryId: 0, quantity: 0, price: 0, status: 'IN_STOCK', supplierId: 0 });
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Error saving item:', error);
+    }
+  };
+
+  const handleEdit = (item: InventoryItem) => {
+    setEditingItem(item);
+    setFormData({
+      name: item.name,
+      categoryId: item.category?.id || 0,
+      quantity: item.quantity,
+      price: item.price,
+      status: item.status,
+      supplierId: item.supplier?.id || 0
+    });
+    setShowAddModal(true);
   };
 
   const columns: TableColumn<InventoryItem>[] = [
@@ -122,7 +161,7 @@ const InventoryManagement: React.FC = () => {
       render: (item) => (
         <div className="flex space-x-2">
           <button
-            onClick={() => setEditingItem(item)}
+            onClick={() => handleEdit(item)}
             className="text-blue-600 hover:text-blue-900"
             title="Edit"
           >
@@ -205,24 +244,158 @@ const InventoryManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Add/Edit Modal would go here */}
+      {/* Add/Edit Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-10 mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Item</h3>
-              {/* Form would go here */}
-              <div className="flex justify-end space-x-3 mt-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingItem ? 'Edit Item' : 'Add New Item'}
+                </h3>
                 <button
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditingItem(null);
+                    setFormData({ name: '', categoryId: 0, quantity: 0, price: 0, status: 'IN_STOCK', supplierId: 0 });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  Cancel
-                </button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                  Add Item
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Item Name */}
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Item Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter item name"
+                    required
+                  />
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="categoryId"
+                    value={formData.categoryId}
+                    onChange={(e) => setFormData({ ...formData, categoryId: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value={0}>Select a category</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Supplier */}
+                <div>
+                  <label htmlFor="supplierId" className="block text-sm font-medium text-gray-700 mb-1">
+                    Supplier <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="supplierId"
+                    value={formData.supplierId}
+                    onChange={(e) => setFormData({ ...formData, supplierId: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value={0}>Select a supplier</option>
+                    {suppliers.map(supplier => (
+                      <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Quantity and Price */}
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                      Quantity <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="quantity"
+                      value={formData.quantity}
+                      onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                      Price <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="price"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    id="status"
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="IN_STOCK">In Stock</option>
+                    <option value="LOW_STOCK">Low Stock</option>
+                    <option value="OUT_OF_STOCK">Out of Stock</option>
+                  </select>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setEditingItem(null);
+                      setFormData({ name: '', categoryId: 0, quantity: 0, price: 0, status: 'IN_STOCK', supplierId: 0 });
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!formData.name.trim() || formData.categoryId === 0 || formData.supplierId === 0}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {editingItem ? 'Update' : 'Create'} Item
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

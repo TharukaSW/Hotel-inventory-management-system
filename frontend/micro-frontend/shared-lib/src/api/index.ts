@@ -138,6 +138,67 @@ class ApiService {
     return this.request<StockTransaction[]>(`/inventory/${itemId}/transactions`);
   }
 
+  // User Management
+  async getAllUsers(): Promise<any[]> {
+    return this.request<any[]>('/users');
+  }
+
+  async getUser(id: number): Promise<any> {
+    return this.request<any>(`/users/${id}`);
+  }
+
+  async createUser(user: any): Promise<any> {
+    return this.request<any>('/users', {
+      method: 'POST',
+      body: JSON.stringify(user),
+    });
+  }
+
+  async updateUser(id: number, user: any): Promise<any> {
+    return this.request<any>(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(user),
+    });
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    return this.request<void>(`/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Analytics and Reports
+  async getInventoryStats(): Promise<any> {
+    return this.request<any>('/admin/stats');
+  }
+
+  async getLowStockItems(): Promise<InventoryItem[]> {
+    return this.request<InventoryItem[]>('/admin/inventory/low-stock');
+  }
+
+  async getOutOfStockItems(): Promise<InventoryItem[]> {
+    return this.request<InventoryItem[]>('/admin/inventory/out-of-stock');
+  }
+
+  async getStockHistory(itemId?: number, days: number = 30): Promise<StockTransaction[]> {
+    const params = new URLSearchParams();
+    if (itemId) params.append('itemId', itemId.toString());
+    params.append('days', days.toString());
+    return this.request<StockTransaction[]>(`/inventory/stock-history?${params}`);
+  }
+
+  async getInventoryReport(startDate: string, endDate: string): Promise<any> {
+    return this.request<any>(`/admin/reports/inventory?startDate=${startDate}&endDate=${endDate}`);
+  }
+
+  async getCategoryReport(): Promise<any> {
+    return this.request<any>('/admin/reports/categories');
+  }
+
+  async getSupplierReport(): Promise<any> {
+    return this.request<any>('/admin/reports/suppliers');
+  }
+
   // Mock authentication (since backend doesn't have auth yet)
   async login(username: string, _password: string): Promise<any> {
     // Mock login - replace with actual auth endpoint when available
@@ -153,6 +214,30 @@ class ApiService {
         });
       }, 1000);
     });
+  }
+
+  // Bulk operations
+  async bulkUpdateInventory(updates: any[]): Promise<InventoryItem[]> {
+    return this.request<InventoryItem[]>('/inventory/bulk-update', {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async importInventory(data: any[]): Promise<any> {
+    return this.request<any>('/inventory/import', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async exportInventory(format: 'csv' | 'excel' = 'csv'): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/inventory/export?format=${format}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.blob();
   }
 }
 
