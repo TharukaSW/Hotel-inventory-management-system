@@ -3,6 +3,8 @@ import { Plus, Search, Edit, Trash2, Mail, Phone } from 'lucide-react';
 import { apiService, Table } from '@hotel-inventory/shared-lib';
 import { Supplier, TableColumn } from '@hotel-inventory/shared-lib';
 
+
+
 const SupplierManagement: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +14,8 @@ const SupplierManagement: React.FC = () => {
   const [formData, setFormData] = useState({ 
     name: '', 
     phoneNumber: '', 
-    email: '' 
+    email: '',
+    supplyItems: ''
   });
 
   useEffect(() => {
@@ -22,7 +25,12 @@ const SupplierManagement: React.FC = () => {
   const fetchSuppliers = async () => {
     try {
       const data = await apiService.getAllSuppliers();
-      setSuppliers(data);
+      // Map supplyItem (from backend) to supplyItems (frontend)
+      const mapped = data.map(sup => ({
+        ...sup,
+        supplyItems: sup.supplyItem || ''
+      }));
+      setSuppliers(mapped);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
     } finally {
@@ -33,7 +41,8 @@ const SupplierManagement: React.FC = () => {
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     supplier.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    supplier.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    supplier.supplyItems?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +58,7 @@ const SupplierManagement: React.FC = () => {
         const newSupplier = await apiService.createSupplier(formData);
         setSuppliers([...suppliers, newSupplier]);
       }
-      setFormData({ name: '', phoneNumber: '', email: '' });
+      setFormData({ name: '', phoneNumber: '', email: '', supplyItems: '' });
       setShowAddModal(false);
     } catch (error) {
       console.error('Error saving supplier:', error);
@@ -61,7 +70,8 @@ const SupplierManagement: React.FC = () => {
     setFormData({ 
       name: supplier.name, 
       phoneNumber: supplier.phoneNumber || '', 
-      email: supplier.email || '' 
+      email: supplier.email || '',
+      supplyItems: supplier.supplyItems || ''
     });
     setShowAddModal(true);
   };
@@ -111,6 +121,13 @@ const SupplierManagement: React.FC = () => {
       )
     },
     {
+      header: 'Supply Items',
+      accessor: 'supplyItems',
+      render: (supplier) => (
+        <div className="text-gray-800">{supplier.supplyItems || 'N/A'}</div>
+      )
+    },
+    {
       header: 'Actions',
       accessor: 'id',
       render: (supplier) => (
@@ -144,7 +161,7 @@ const SupplierManagement: React.FC = () => {
         <button
           onClick={() => {
             setEditingSupplier(null);
-            setFormData({ name: '', phoneNumber: '', email: '' });
+            setFormData({ name: '', phoneNumber: '', email: '', supplyItems: '' });
             setShowAddModal(true);
           }}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -234,13 +251,26 @@ const SupplierManagement: React.FC = () => {
                     placeholder="Enter email address"
                   />
                 </div>
+                <div className="mb-4">
+                  <label htmlFor="supplyItems" className="block text-sm font-medium text-gray-700 mb-2">
+                    Supply Items
+                  </label>
+                  <input
+                    type="text"
+                    id="supplyItems"
+                    value={formData.supplyItems}
+                    onChange={(e) => setFormData({ ...formData, supplyItems: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter supply items (comma separated)"
+                  />
+                </div>
                 <div className="flex justify-end space-x-3">
                   <button
                     type="button"
                     onClick={() => {
                       setShowAddModal(false);
                       setEditingSupplier(null);
-                      setFormData({ name: '', phoneNumber: '', email: '' });
+                      setFormData({ name: '', phoneNumber: '', email: '', supplyItems: '' });
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                   >

@@ -1,12 +1,14 @@
 package com.example.hotel_inventory.dto;
 
+import java.time.LocalDateTime;
+
 import com.example.hotel_inventory.model.Supplier;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-
-import java.time.LocalDateTime;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -20,6 +22,8 @@ public class SupplierDto {
     private String phoneNumber;
     private String email;
     private String address;
+
+    private String supplyItem;
     private boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -33,6 +37,7 @@ public class SupplierDto {
                 .phoneNumber(supplier.getPhoneNumber())
                 .email(supplier.getEmail())
                 .address(supplier.getAddress())
+                .supplyItem(supplier.getSupplyItem())
                 .isActive(supplier.isActive())
                 .createdAt(supplier.getCreatedAt())
                 .updatedAt(supplier.getUpdatedAt())

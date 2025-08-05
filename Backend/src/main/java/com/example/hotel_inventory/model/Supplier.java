@@ -1,6 +1,7 @@
 package com.example.hotel_inventory.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -32,6 +33,10 @@ public class Supplier {
 
     @Column(name = "address")
     private String address;
+
+    @Column(name = "supply_item")
+    @JsonAlias({"supplyItems"})
+    private String supplyItem;
 
     @Column(name = "is_active")
     private boolean isActive = true;

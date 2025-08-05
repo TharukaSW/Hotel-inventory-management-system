@@ -1,6 +1,7 @@
 package com.example.hotel_inventory.dto.request;
 
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,5 +26,7 @@ public class CreateSupplierRequest {
     private String email;
     
     private String address;
+    @JsonAlias({"supplyItems"})
+    private String supplyItem;
     private boolean isActive = true;
 } 

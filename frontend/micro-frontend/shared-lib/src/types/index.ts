@@ -9,6 +9,8 @@ export interface Supplier {
   name: string;
   contact?: string;
   email?: string;
+  phoneNumber?: string;
+  supplyItem?: string;
 }
 
 export interface InventoryItem {
@@ -84,6 +86,8 @@ export interface SupplierForm {
   name: string;
   contact?: string;
   email?: string;
+  phoneNumber?: string;
+  supplyItem?: string;
 }
 
 export interface StockTransactionForm {

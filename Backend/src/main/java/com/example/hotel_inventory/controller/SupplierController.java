@@ -27,6 +27,7 @@ public class SupplierController {
                 .phoneNumber(request.getPhoneNumber())
                 .email(request.getEmail())
                 .address(request.getAddress())
+                .supplyItem(request.getSupplyItem())
                 .isActive(request.isActive())
                 .build();
         Supplier savedSupplier = supplierRepository.save(supplier);
@@ -59,6 +60,7 @@ public class SupplierController {
                     supplier.setPhoneNumber(request.getPhoneNumber());
                     supplier.setEmail(request.getEmail());
                     supplier.setAddress(request.getAddress());
+                    supplier.setSupplyItem(request.getSupplyItem());
                     supplier.setActive(request.isActive());
                     Supplier savedSupplier = supplierRepository.save(supplier);
                     return ResponseEntity.ok(SupplierDto.fromEntity(savedSupplier));
