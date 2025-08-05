@@ -58,6 +58,7 @@ public class User {
     public enum UserRole {
         ADMIN,
         FRONT_DESK,
-        STOCK_MANAGER
+        STOCK_MANAGER,
+        INSPECTOR
     }
 } 

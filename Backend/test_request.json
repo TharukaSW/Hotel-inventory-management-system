@@ -1,0 +1,7 @@
+{
+  "inventoryItemId": 7,
+  "requestedQuantity": 2,
+  "locationType": "ROOM",
+  "locationIdentifier": "101", 
+  "reason": "Test request"
+}

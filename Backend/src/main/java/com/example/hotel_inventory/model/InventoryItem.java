@@ -74,6 +74,18 @@ public class InventoryItem {
         updatedAt = LocalDateTime.now();
     }
 
+    public int getCurrentStock() {
+        return this.quantity;
+    }
+
+    public int getMinimumStock() {
+        return this.minQuantity;
+    }
+
+    public BigDecimal getUnitPrice() {
+        return this.price;
+    }
+
     public enum ItemStatus {
         IN_STOCK,
         LOW_STOCK,

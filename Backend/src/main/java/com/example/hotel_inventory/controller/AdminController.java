@@ -1,11 +1,16 @@
 package com.example.hotel_inventory.controller;
 
 import com.example.hotel_inventory.dto.InventoryStats;
+import com.example.hotel_inventory.dto.ItemRequestDto;
+import com.example.hotel_inventory.dto.InspectionDto;
 import com.example.hotel_inventory.model.InventoryItem;
 import com.example.hotel_inventory.model.StockTransaction;
 import com.example.hotel_inventory.service.InventoryService;
+import com.example.hotel_inventory.service.InspectorService;
+import com.example.hotel_inventory.service.AdminInspectorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -21,6 +26,9 @@ public class AdminController {
 
     @Autowired
     private InventoryService inventoryService;
+
+    @Autowired
+    private AdminInspectorService adminInspectorService;
 
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getAdminStats() {
@@ -146,6 +154,32 @@ public class AdminController {
         }
     }
 
+    // Inspector item request approval endpoints
+    @GetMapping("/item-requests")
+    public ResponseEntity<List<ItemRequestDto>> getItemRequests() {
+        List<ItemRequestDto> itemRequests = adminInspectorService.getItemRequests();
+        return ResponseEntity.ok(itemRequests);
+    }
+
+    @PostMapping("/item-requests/{requestId}/approve")
+    public ResponseEntity<ItemRequestDto> approveItemRequest(
+            @PathVariable Long requestId,
+            Authentication authentication) {
+        Long adminUserId = getCurrentUserId(authentication);
+        ItemRequestDto result = adminInspectorService.approveItemRequest(requestId, adminUserId);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/item-requests/{requestId}/reject")
+    public ResponseEntity<ItemRequestDto> rejectItemRequest(
+            @PathVariable Long requestId,
+            @RequestParam String rejectionNotes,
+            Authentication authentication) {
+        Long adminUserId = getCurrentUserId(authentication);
+        ItemRequestDto result = adminInspectorService.rejectItemRequest(requestId, adminUserId, rejectionNotes);
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/inventory/bulk-update")
     public ResponseEntity<List<InventoryItem>> bulkUpdateInventory(@RequestBody List<Map<String, Object>> updates) {
         try {
@@ -155,5 +189,11 @@ public class AdminController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    // Helper method to get current user ID - implement based on your authentication setup
+    private Long getCurrentUserId(Authentication authentication) {
+        // This is a placeholder - implement based on your UserDetails or JWT token structure
+        return 1L; // For now, return a default value
     }
 }
