@@ -1,75 +1,102 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Package } from 'lucide-react';
+import { Search, Package, Filter } from 'lucide-react';
+import { getAllInventoryItems, searchInventoryItems, getLowStockInventoryItems, getInventoryItemsByStatus } from '../services/inspectorService';
 
 interface InventoryItem {
   id: number;
   name: string;
   description: string;
-  currentStock: number;
-  minimumStock: number;
-  categoryName: string;
-  supplierName: string;
+  quantity: number;
+  minQuantity: number;
+  maxQuantity?: number;
+  price: number;
+  status: string;
+  category?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
+  supplier?: {
+    id: number;
+    name: string;
+    contactPerson?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 const Inventory: React.FC = () => {
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+
+  const fetchInventoryItems = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let data;
+      if (showLowStockOnly) {
+        data = await getLowStockInventoryItems();
+      } else if (selectedStatus) {
+        data = await getInventoryItemsByStatus(selectedStatus);
+      } else if (searchTerm.trim()) {
+        data = await searchInventoryItems(searchTerm.trim());
+      } else {
+        data = await getAllInventoryItems();
+      }
+      
+      setItems(data);
+      setFilteredItems(data);
+    } catch (err) {
+      console.error('Error fetching inventory items:', err);
+      setError('Failed to load inventory items. Please try again.');
+      setItems([]);
+      setFilteredItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // TODO: Fetch inventory items from API
-    setTimeout(() => {
-      setItems([
-        {
-          id: 1,
-          name: 'Towels',
-          description: 'White cotton towels',
-          currentStock: 50,
-          minimumStock: 20,
-          categoryName: 'Linens',
-          supplierName: 'Linen Supply Co'
-        },
-        {
-          id: 2,
-          name: 'Toilet Paper',
-          description: '2-ply toilet paper rolls',
-          currentStock: 100,
-          minimumStock: 25,
-          categoryName: 'Bathroom Supplies',
-          supplierName: 'Paper Products Inc'
-        },
-        {
-          id: 3,
-          name: 'Cleaning Supplies',
-          description: 'All-purpose cleaner bottles',
-          currentStock: 15,
-          minimumStock: 10,
-          categoryName: 'Cleaning',
-          supplierName: 'Clean Pro Solutions'
-        },
-        {
-          id: 4,
-          name: 'Bed Sheets',
-          description: 'Queen size white bed sheets',
-          currentStock: 8,
-          minimumStock: 15,
-          categoryName: 'Linens',
-          supplierName: 'Linen Supply Co'
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    fetchInventoryItems();
+  }, [selectedStatus, showLowStockOnly]);
 
-  const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || item.categoryName === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm.trim()) {
+        fetchInventoryItems();
+      } else if (!selectedStatus && !showLowStockOnly) {
+        fetchInventoryItems();
+      }
+    }, 500);
 
-  const categories = Array.from(new Set(items.map(item => item.categoryName)));
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    let filtered = items;
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(item => 
+        item.category?.name === selectedCategory
+      );
+    }
+    
+    setFilteredItems(filtered);
+  }, [items, selectedCategory]);
+
+  const categories = Array.from(new Set(
+    items.map(item => item.category?.name).filter(Boolean)
+  )) as string[];
 
   const getStockStatus = (currentStock: number, minimumStock: number) => {
     if (currentStock === 0) {
@@ -98,8 +125,14 @@ const Inventory: React.FC = () => {
         </p>
       </div>
 
-      {/* Search and Filter */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+
+      {/* Search and Filters */}
+      <div className="mb-6 flex flex-col lg:flex-row gap-4">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
@@ -115,19 +148,40 @@ const Inventory: React.FC = () => {
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="block w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          className="block w-full lg:w-48 px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="">All Categories</option>
           {categories.map(category => (
             <option key={category} value={category}>{category}</option>
           ))}
         </select>
+        <select
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+          className="block w-full lg:w-48 px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">All Status</option>
+          <option value="IN_STOCK">In Stock</option>
+          <option value="LOW_STOCK">Low Stock</option>
+          <option value="OUT_OF_STOCK">Out of Stock</option>
+          <option value="DISCONTINUED">Discontinued</option>
+        </select>
+        <button
+          onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+          className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
+            showLowStockOnly
+              ? 'bg-red-100 text-red-800 border border-red-300'
+              : 'bg-gray-100 text-gray-700 border border-gray-300'
+          }`}
+        >
+          Low Stock Only
+        </button>
       </div>
 
       {/* Items Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredItems.map((item) => {
-          const stockStatus = getStockStatus(item.currentStock, item.minimumStock);
+          const stockStatus = getStockStatus(item.quantity, item.minQuantity);
           return (
             <div key={item.id} className="bg-white overflow-hidden shadow rounded-lg">
               <div className="p-5">
@@ -141,7 +195,7 @@ const Inventory: React.FC = () => {
                         {item.name}
                       </dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        {item.currentStock} units
+                        {item.quantity} units
                       </dd>
                     </dl>
                   </div>
@@ -153,12 +207,23 @@ const Inventory: React.FC = () => {
                       {stockStatus.label}
                     </span>
                     <span className="text-xs text-gray-500">
-                      Min: {item.minimumStock}
+                      Min: {item.minQuantity}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                    <span>Price: ${item.price?.toFixed(2) || 'N/A'}</span>
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      item.status === 'IN_STOCK' ? 'bg-green-100 text-green-800' :
+                      item.status === 'LOW_STOCK' ? 'bg-yellow-100 text-yellow-800' :
+                      item.status === 'OUT_OF_STOCK' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {item.status?.replace('_', ' ')}
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-gray-500">
-                    <p>Category: {item.categoryName}</p>
-                    <p>Supplier: {item.supplierName}</p>
+                    <p>Category: {item.category?.name || 'N/A'}</p>
+                    <p>Supplier: {item.supplier?.name || 'N/A'}</p>
                   </div>
                 </div>
               </div>

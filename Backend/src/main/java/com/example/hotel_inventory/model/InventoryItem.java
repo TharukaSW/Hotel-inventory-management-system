@@ -42,6 +42,22 @@ public class InventoryItem {
     @Column(name = "max_quantity")
     private int maxQuantity = 1000;
 
+    // Unit of measurement (e.g., pieces, liters, kg)
+    @Column(name = "unit_of_measurement")
+    private String unitOfMeasurement;
+
+    // Expiry date for perishable items
+    @Column(name = "expiry_date")
+    private LocalDateTime expiryDate;
+
+    // Condition for furniture and fixtures (e.g., New, Good, Fair, Poor)
+    @Column(name = "condition_status")
+    private String condition;
+
+    // Warranty expiry date for equipment
+    @Column(name = "warranty_expiry")
+    private LocalDateTime warrantyExpiry;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id")
     private Supplier supplier;

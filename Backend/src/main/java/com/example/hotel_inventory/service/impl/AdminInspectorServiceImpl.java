@@ -2,24 +2,30 @@ package com.example.hotel_inventory.service.impl;
 
 import com.example.hotel_inventory.dto.ItemRequestDto;
 import com.example.hotel_inventory.model.ItemRequest;
+import com.example.hotel_inventory.model.InventoryItem;
+import com.example.hotel_inventory.model.StockTransaction;
 import com.example.hotel_inventory.model.User;
 import com.example.hotel_inventory.repository.ItemRequestRepository;
+import com.example.hotel_inventory.repository.InventoryItemRepository;
+import com.example.hotel_inventory.repository.StockTransactionRepository;
 import com.example.hotel_inventory.repository.UserRepository;
 import com.example.hotel_inventory.service.AdminInspectorService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AdminInspectorServiceImpl implements AdminInspectorService {
 
-    @Autowired
-    private ItemRequestRepository itemRequestRepository;
-
-    @Autowired
-    private UserRepository userRepository;
+    private final ItemRequestRepository itemRequestRepository;
+    private final InventoryItemRepository inventoryItemRepository;
+    private final StockTransactionRepository stockTransactionRepository;
+    private final UserRepository userRepository;
 
     @Override
     public List<ItemRequestDto> getItemRequests() {
@@ -28,6 +34,7 @@ public class AdminInspectorServiceImpl implements AdminInspectorService {
     }
 
     @Override
+    @Transactional
     public ItemRequestDto approveItemRequest(Long requestId, Long adminUserId) {
         ItemRequest itemRequest = itemRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Item request not found"));
@@ -39,8 +46,52 @@ public class AdminInspectorServiceImpl implements AdminInspectorService {
         User adminUser = userRepository.findById(adminUserId)
                 .orElseThrow(() -> new RuntimeException("Admin user not found"));
 
+        InventoryItem inventoryItem = itemRequest.getInventoryItem();
+        int requestedQuantity = itemRequest.getRequestedQuantity();
+        int currentQuantity = inventoryItem.getQuantity();
+        
+        // Check if we have enough stock
+        if (currentQuantity < requestedQuantity) {
+            throw new RuntimeException(
+                String.format("Insufficient stock. Available: %d, Requested: %d", 
+                    currentQuantity, requestedQuantity));
+        }
+        
+        // Update inventory quantity
+        int newQuantity = currentQuantity - requestedQuantity;
+        inventoryItem.setQuantity(newQuantity);
+        inventoryItem.setUpdatedBy(adminUser);
+        
+        // Update status based on new quantity
+        if (newQuantity == 0) {
+            inventoryItem.setStatus(InventoryItem.ItemStatus.OUT_OF_STOCK);
+        } else if (newQuantity <= inventoryItem.getMinQuantity()) {
+            inventoryItem.setStatus(InventoryItem.ItemStatus.LOW_STOCK);
+        }
+        
+        inventoryItemRepository.save(inventoryItem);
+        
+        // Create stock transaction record
+        StockTransaction stockTransaction = StockTransaction.builder()
+                .item(inventoryItem)
+                .type(StockTransaction.TransactionType.REMOVE)
+                .quantity(requestedQuantity)
+                .previousQuantity(currentQuantity)
+                .newQuantity(newQuantity)
+                .reason(String.format("Approved request by %s for %s (%s)", 
+                    itemRequest.getInspector().getFirstName() + " " + itemRequest.getInspector().getLastName(),
+                    itemRequest.getLocationType(), 
+                    itemRequest.getLocationIdentifier()))
+                .performedBy(adminUser)
+                .transactionDate(LocalDateTime.now())
+                .build();
+        
+        stockTransactionRepository.save(stockTransaction);
+        
+        // Update item request status
         itemRequest.setStatus(ItemRequest.RequestStatus.APPROVED);
         itemRequest.setApprovedBy(adminUser);
+        itemRequest.setApprovalNotes("Request approved and inventory updated");
         itemRequestRepository.save(itemRequest);
 
         return convertToDto(itemRequest);

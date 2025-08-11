@@ -117,3 +117,52 @@ export const getInventoryItemById = async (id: number) => {
     }
 };
 
+export const getInventoryItemsByCategory = async (categoryId: number) => {
+    try {
+        const response = await apiClient.get(`/inventory/category/${categoryId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching inventory items by category: ${categoryId}`, error);
+        throw error;
+    }
+};
+
+export const getInventoryItemsBySupplier = async (supplierId: number) => {
+    try {
+        const response = await apiClient.get(`/inventory/supplier/${supplierId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching inventory items by supplier: ${supplierId}`, error);
+        throw error;
+    }
+};
+
+export const searchInventoryItems = async (searchTerm: string) => {
+    try {
+        const response = await apiClient.get(`/inventory/search?searchTerm=${encodeURIComponent(searchTerm)}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error searching inventory items: ${searchTerm}`, error);
+        throw error;
+    }
+};
+
+export const getLowStockInventoryItems = async () => {
+    try {
+        const response = await apiClient.get('/inventory/low-stock');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching low stock inventory items', error);
+        throw error;
+    }
+};
+
+export const getInventoryItemsByStatus = async (status: string) => {
+    try {
+        const response = await apiClient.get(`/inventory/status/${status}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching inventory items by status: ${status}`, error);
+        throw error;
+    }
+};

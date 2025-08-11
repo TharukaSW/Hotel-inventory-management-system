@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -33,6 +34,12 @@ public class CreateInventoryItemRequest {
     
     private int minQuantity = 10;
     private int maxQuantity = 1000;
+    
+    // Optional category-specific fields
+    private String unitOfMeasurement;
+    private LocalDateTime expiryDate;
+    private String condition;
+    private LocalDateTime warrantyExpiry;
     
     @NotNull(message = "Supplier is required")
     private Long supplierId;

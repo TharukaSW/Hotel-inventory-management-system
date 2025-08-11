@@ -1,24 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { apiService, Table, Badge } from '@hotel-inventory/shared-lib';
-import { InventoryItem, Category, Supplier, TableColumn, InventoryItemForm } from '@hotel-inventory/shared-lib';
+import { InventoryItem, Category, Supplier, TableColumn } from '@hotel-inventory/shared-lib';
 import { formatCurrency, formatDate } from '@hotel-inventory/shared-lib';
-import { useToast } from '../components/ToastContainer';
-import { useConfirmation } from '../components/ConfirmationModal';
-
-// Category field configurations
-const categoryFieldConfigs = {
-  'Housekeeping Inventory': ['unitOfMeasurement', 'expiryDate', 'minQuantity'],
-  'Food and Beverage (F&B) Inventory': ['unitOfMeasurement', 'expiryDate', 'minQuantity'],
-  'Furniture and Fixtures': ['condition', 'warrantyExpiry'],
-  'Maintenance and Engineering Supplies': ['unitOfMeasurement', 'minQuantity'],
-  'Office and Stationery Supplies': ['unitOfMeasurement', 'minQuantity'],
-  'Kitchen Equipment': ['warrantyExpiry'],
-  'Safety and Security Items': [],
-  'Laundry Supplies': ['unitOfMeasurement', 'expiryDate', 'minQuantity'],
-  'Uniforms and Staff Wear': ['minQuantity'],
-  'Event and Banquet Supplies': []
-};
 
 const InventoryManagement: React.FC = () => {
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -28,23 +12,12 @@ const InventoryManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-
-  const { showError, showSuccess } = useToast();
-  const { confirm } = useConfirmation();
-
-  const [formData, setFormData] = useState<InventoryItemForm>({
+  const [formData, setFormData] = useState({
     name: '',
-    description: '',
     categoryId: 0,
     quantity: 0,
     price: 0,
     status: 'IN_STOCK',
-    minQuantity: 10,
-    unitOfMeasurement: '',
-    expiryDate: '',
-    condition: '',
-    warrantyExpiry: '',
     supplierId: 0
   });
 
@@ -64,7 +37,6 @@ const InventoryManagement: React.FC = () => {
       setSuppliers(suppliersData);
     } catch (error) {
       console.error('Error fetching data:', error);
-      showError('Error fetching data');
     } finally {
       setLoading(false);
     }
@@ -77,20 +49,12 @@ const InventoryManagement: React.FC = () => {
   );
 
   const handleDelete = async (id: number) => {
-    const confirmed = await confirm({
-      title: 'Delete Item',
-      message: 'Are you sure you want to delete this inventory item? This action cannot be undone.',
-      type: 'danger'
-    });
-    
-    if (confirmed) {
+    if (window.confirm('Are you sure you want to delete this item?')) {
       try {
         await apiService.deleteInventoryItem(id);
         setItems(items.filter(item => item.id !== id));
-        showSuccess('Item deleted successfully');
       } catch (error) {
         console.error('Error deleting item:', error);
-        showError('Failed to delete item');
       }
     }
   };
@@ -98,221 +62,32 @@ const InventoryManagement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const submitData = {
-        ...formData,
-        // Convert date strings to ISO format if they exist
-        expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : undefined,
-        warrantyExpiry: formData.warrantyExpiry ? new Date(formData.warrantyExpiry).toISOString() : undefined,
-      };
-
       if (editingItem) {
-        const updatedItem = await apiService.updateInventoryItem(editingItem.id, submitData);
+        const updatedItem = await apiService.updateInventoryItem(editingItem.id, formData);
         setItems(items.map(item => item.id === editingItem.id ? updatedItem : item));
         setEditingItem(null);
-        showSuccess('Item updated successfully');
       } else {
-        const newItem = await apiService.createInventoryItem(submitData);
+        const newItem = await apiService.createInventoryItem(formData);
         setItems([...items, newItem]);
-        showSuccess('Item created successfully');
       }
-      resetForm();
+      setFormData({ name: '', categoryId: 0, quantity: 0, price: 0, status: 'IN_STOCK', supplierId: 0 });
       setShowAddModal(false);
     } catch (error) {
       console.error('Error saving item:', error);
-      showError('Failed to save item');
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      categoryId: 0,
-      quantity: 0,
-      price: 0,
-      status: 'IN_STOCK',
-      minQuantity: 10,
-      unitOfMeasurement: '',
-      expiryDate: '',
-      condition: '',
-      warrantyExpiry: '',
-      supplierId: 0
-    });
-    setSelectedCategory(null);
   };
 
   const handleEdit = (item: InventoryItem) => {
     setEditingItem(item);
-    const category = categories.find(cat => cat.id === item.category?.id);
-    setSelectedCategory(category || null);
-    
     setFormData({
       name: item.name,
-      description: item.description || '',
       categoryId: item.category?.id || 0,
       quantity: item.quantity,
       price: item.price,
       status: item.status,
-      minQuantity: item.minQuantity || 10,
-      unitOfMeasurement: item.unitOfMeasurement || '',
-      expiryDate: item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : '',
-      condition: item.condition || '',
-      warrantyExpiry: item.warrantyExpiry ? new Date(item.warrantyExpiry).toISOString().split('T')[0] : '',
       supplierId: item.supplier?.id || 0
     });
     setShowAddModal(true);
-  };
-
-  const handleCategoryChange = (categoryId: number) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    setSelectedCategory(category || null);
-    setFormData({ ...formData, categoryId });
-  };
-
-  const getRequiredFields = (): string[] => {
-    if (!selectedCategory) return [];
-    return categoryFieldConfigs[selectedCategory.name as keyof typeof categoryFieldConfigs] || [];
-  };
-
-  const renderCategorySpecificFields = () => {
-    if (!selectedCategory) return null;
-
-    const requiredFields = getRequiredFields();
-    
-    return (
-      <div className="space-y-4 p-4 bg-blue-50 rounded-md">
-        <h4 className="font-medium text-blue-900">
-          {selectedCategory.name} - Specific Fields
-        </h4>
-        
-        {/* Description field for categories that use it */}
-        {(['Food and Beverage (F&B) Inventory', 'Furniture and Fixtures', 'Maintenance and Engineering Supplies', 
-           'Office and Stationery Supplies', 'Safety and Security Items', 'Laundry Supplies', 'Uniforms and Staff Wear', 
-           'Event and Banquet Supplies'].includes(selectedCategory.name)) && (
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              {selectedCategory.name === 'Food and Beverage (F&B) Inventory' ? 'Food Type' : 
-               selectedCategory.name === 'Uniforms and Staff Wear' ? 'Description' : 'Type'}
-            </label>
-            <input
-              type="text"
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder={selectedCategory.name === 'Food and Beverage (F&B) Inventory' ? 'e.g., Dairy, Meat, Vegetables' : 
-                          selectedCategory.name === 'Uniforms and Staff Wear' ? 'e.g., Chef uniform, Front desk attire' : 
-                          'e.g., Equipment type, Item category'}
-            />
-          </div>
-        )}
-
-        {/* Unit of Measurement */}
-        {requiredFields.includes('unitOfMeasurement') && (
-          <div>
-            <label htmlFor="unitOfMeasurement" className="block text-sm font-medium text-gray-700 mb-1">
-              Unit of Measurement <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="unitOfMeasurement"
-              value={formData.unitOfMeasurement}
-              onChange={(e) => setFormData({ ...formData, unitOfMeasurement: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-              <option value="">Select unit</option>
-              <option value="pieces">Pieces</option>
-              <option value="liters">Liters</option>
-              <option value="kg">Kilograms</option>
-              <option value="grams">Grams</option>
-              <option value="bottles">Bottles</option>
-              <option value="boxes">Boxes</option>
-              <option value="packets">Packets</option>
-              <option value="rolls">Rolls</option>
-              <option value="sets">Sets</option>
-              <option value="pairs">Pairs</option>
-            </select>
-          </div>
-        )}
-
-        {/* Expiry Date */}
-        {requiredFields.includes('expiryDate') && (
-          <div>
-            <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-1">
-              {selectedCategory.name === 'Food and Beverage (F&B) Inventory' ? 'Expiry Date/Hours' : 'Expiry Date'} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              id="expiryDate"
-              value={formData.expiryDate}
-              onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-        )}
-
-        {/* Condition */}
-        {requiredFields.includes('condition') && (
-          <div>
-            <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-1">
-              Condition <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="condition"
-              value={formData.condition}
-              onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-              <option value="">Select condition</option>
-              <option value="New">New</option>
-              <option value="Excellent">Excellent</option>
-              <option value="Good">Good</option>
-              <option value="Fair">Fair</option>
-              <option value="Poor">Poor</option>
-              <option value="Needs Repair">Needs Repair</option>
-            </select>
-          </div>
-        )}
-
-        {/* Warranty Expiry */}
-        {requiredFields.includes('warrantyExpiry') && (
-          <div>
-            <label htmlFor="warrantyExpiry" className="block text-sm font-medium text-gray-700 mb-1">
-              Warranty Expiry Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              id="warrantyExpiry"
-              value={formData.warrantyExpiry}
-              onChange={(e) => setFormData({ ...formData, warrantyExpiry: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-        )}
-
-        {/* Minimum Level */}
-        {requiredFields.includes('minQuantity') && (
-          <div>
-            <label htmlFor="minQuantity" className="block text-sm font-medium text-gray-700 mb-1">
-              Minimum Level <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              id="minQuantity"
-              value={formData.minQuantity}
-              onChange={(e) => setFormData({ ...formData, minQuantity: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder="10"
-              min="1"
-              required
-            />
-          </div>
-        )}
-      </div>
-    );
   };
 
   const columns: TableColumn<InventoryItem>[] = [
@@ -323,9 +98,6 @@ const InventoryManagement: React.FC = () => {
         <div>
           <div className="font-medium text-gray-900">{item.name}</div>
           <div className="text-sm text-gray-500">ID: {item.id}</div>
-          {item.description && (
-            <div className="text-sm text-gray-500">{item.description}</div>
-          )}
         </div>
       )
     },
@@ -339,14 +111,16 @@ const InventoryManagement: React.FC = () => {
       )
     },
     {
-      header: 'Details',
+      header: 'Quantity',
       accessor: 'quantity',
       render: (item) => (
-        <div className="text-sm">
-          <div className="font-medium">Qty: {item.quantity}</div>
-          {item.unitOfMeasurement && <div>Unit: {item.unitOfMeasurement}</div>}
-          {item.minQuantity && <div>Min: {item.minQuantity}</div>}
-          {item.condition && <div>Condition: {item.condition}</div>}
+        <div className="text-center">
+          <span className={`font-medium ${
+            item.quantity === 0 ? 'text-red-600' : 
+            item.quantity <= 10 ? 'text-yellow-600' : 'text-green-600'
+          }`}>
+            {item.quantity}
+          </span>
         </div>
       )
     },
@@ -360,7 +134,7 @@ const InventoryManagement: React.FC = () => {
       accessor: 'status',
       render: (item) => {
         const status = item.quantity === 0 ? 'OUT_OF_STOCK' : 
-                      item.quantity <= (item.minQuantity || 10) ? 'LOW_STOCK' : 'IN_STOCK';
+                      item.quantity <= 10 ? 'LOW_STOCK' : 'IN_STOCK';
         return (
           <Badge 
             variant={status === 'IN_STOCK' ? 'success' : status === 'LOW_STOCK' ? 'warning' : 'danger'}
@@ -377,15 +151,9 @@ const InventoryManagement: React.FC = () => {
       render: (item) => item.supplier?.name || 'N/A'
     },
     {
-      header: 'Dates',
+      header: 'Created',
       accessor: 'createdDate',
-      render: (item) => (
-        <div className="text-sm">
-          <div>Created: {formatDate(item.createdDate)}</div>
-          {item.expiryDate && <div>Expires: {formatDate(item.expiryDate)}</div>}
-          {item.warrantyExpiry && <div>Warranty: {formatDate(item.warrantyExpiry)}</div>}
-        </div>
-      )
+      render: (item) => formatDate(item.createdDate)
     },
     {
       header: 'Actions',
@@ -416,7 +184,7 @@ const InventoryManagement: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Inventory Management</h1>
-          <p className="text-gray-600">Manage hotel inventory items with category-specific fields</p>
+          <p className="text-gray-600">Manage hotel inventory items and stock levels</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -479,7 +247,7 @@ const InventoryManagement: React.FC = () => {
       {/* Add/Edit Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+          <div className="relative top-10 mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-semibold text-gray-900">
@@ -489,7 +257,7 @@ const InventoryManagement: React.FC = () => {
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingItem(null);
-                    resetForm();
+                    setFormData({ name: '', categoryId: 0, quantity: 0, price: 0, status: 'IN_STOCK', supplierId: 0 });
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -524,7 +292,7 @@ const InventoryManagement: React.FC = () => {
                   <select
                     id="categoryId"
                     value={formData.categoryId}
-                    onChange={(e) => handleCategoryChange(Number(e.target.value))}
+                    onChange={(e) => setFormData({ ...formData, categoryId: Number(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
@@ -533,47 +301,6 @@ const InventoryManagement: React.FC = () => {
                       <option key={category.id} value={category.id}>{category.name}</option>
                     ))}
                   </select>
-                </div>
-
-                {/* Category-specific fields */}
-                {renderCategorySpecificFields()}
-
-                {/* Common fields */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Quantity */}
-                  <div>
-                    <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-                      Quantity <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      id="quantity"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="0"
-                      min="0"
-                      required
-                    />
-                  </div>
-
-                  {/* Price */}
-                  <div>
-                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                      Price <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      id="price"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
                 </div>
 
                 {/* Supplier */}
@@ -593,6 +320,41 @@ const InventoryManagement: React.FC = () => {
                       <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                     ))}
                   </select>
+                </div>
+
+                {/* Quantity and Price */}
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                      Quantity <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="quantity"
+                      value={formData.quantity}
+                      onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                      Price <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="price"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                  </div>
                 </div>
 
                 {/* Status */}
@@ -619,7 +381,7 @@ const InventoryManagement: React.FC = () => {
                     onClick={() => {
                       setShowAddModal(false);
                       setEditingItem(null);
-                      resetForm();
+                      setFormData({ name: '', categoryId: 0, quantity: 0, price: 0, status: 'IN_STOCK', supplierId: 0 });
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                   >
@@ -642,4 +404,4 @@ const InventoryManagement: React.FC = () => {
   );
 };
 
-export default InventoryManagement;
+export default InventoryManagement; 

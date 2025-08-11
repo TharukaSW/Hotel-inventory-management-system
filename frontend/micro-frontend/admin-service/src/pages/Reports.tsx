@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  BarChart3, 
   TrendingUp, 
   TrendingDown, 
   Package, 
   DollarSign,
-  Calendar,
-  Download,
-  Filter
+  Download
 } from 'lucide-react';
 import { apiService } from '@hotel-inventory/shared-lib';
 import { InventoryItem, Category, Supplier } from '@hotel-inventory/shared-lib';
+import { useToast } from '../components/ToastContainer';
 
 const Reports: React.FC = () => {
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -18,10 +16,58 @@ const Reports: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     fetchReportData();
   }, []);
+
+  const handleExportReport = async () => {
+    try {
+
+      // Create and download CSV
+      const csvContent = [
+        ['Report Generated:', new Date().toLocaleDateString()],
+        ['Period:', selectedPeriod],
+        [''],
+        ['Summary'],
+        ['Total Items', totalItems],
+        ['Total Value', `$${totalValue.toLocaleString()}`],
+        ['Low Stock Items', lowStockItems],
+        ['Out of Stock Items', outOfStockItems],
+        [''],
+        ['Inventory Items'],
+        ['ID', 'Name', 'Category', 'Supplier', 'Quantity', 'Price', 'Total Value', 'Status'],
+        ...items.map(item => [
+          item.id,
+          item.name,
+          item.category?.name || 'N/A',
+          item.supplier?.name || 'N/A',
+          item.quantity,
+          item.price,
+          item.price * item.quantity,
+          item.quantity === 0 ? 'Out of Stock' : item.quantity <= 10 ? 'Low Stock' : 'In Stock'
+        ])
+      ].map(row => row.join(',')).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `inventory-report-${selectedPeriod}-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
+      showSuccess('Report exported successfully!');
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      showError('Failed to export report', 'Please try again.');
+    }
+  };
 
   const fetchReportData = async () => {
     try {
@@ -94,7 +140,10 @@ const Reports: React.FC = () => {
             <option value="quarter">Last Quarter</option>
             <option value="year">Last Year</option>
           </select>
-          <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <button 
+            onClick={handleExportReport}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
             <Download className="h-4 w-4 mr-2" />
             Export
           </button>

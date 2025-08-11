@@ -202,6 +202,52 @@ public class InspectorServiceImpl implements InspectorService {
         return convertToInventoryItemDto(item);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<InventoryItemDto> getInventoryItemsByCategory(Long categoryId) {
+        List<InventoryItem> items = inventoryItemRepository.findByCategoryId(categoryId);
+        return items.stream()
+                .map(this::convertToInventoryItemDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InventoryItemDto> getInventoryItemsBySupplier(Long supplierId) {
+        List<InventoryItem> items = inventoryItemRepository.findBySupplierId(supplierId);
+        return items.stream()
+                .map(this::convertToInventoryItemDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InventoryItemDto> searchInventoryItems(String searchTerm) {
+        List<InventoryItem> items = inventoryItemRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(searchTerm, searchTerm);
+        return items.stream()
+                .map(this::convertToInventoryItemDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InventoryItemDto> getLowStockInventoryItems() {
+        List<InventoryItem> items = inventoryItemRepository.findByQuantityLessThanOrEqualToMinQuantity();
+        return items.stream()
+                .map(this::convertToInventoryItemDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InventoryItemDto> getInventoryItemsByStatus(String status) {
+        InventoryItem.ItemStatus itemStatus = InventoryItem.ItemStatus.valueOf(status.toUpperCase());
+        List<InventoryItem> items = inventoryItemRepository.findByStatus(itemStatus);
+        return items.stream()
+                .map(this::convertToInventoryItemDto)
+                .collect(Collectors.toList());
+    }
+
     // Conversion methods
     private ItemRequestDto convertToItemRequestDto(ItemRequest itemRequest) {
         return ItemRequestDto.builder()
@@ -266,12 +312,17 @@ public class InspectorServiceImpl implements InspectorService {
                 .id(item.getId())
                 .name(item.getName())
                 .description(item.getDescription())
+                .category(item.getCategory() != null ? CategoryDto.fromEntity(item.getCategory()) : null)
                 .quantity(item.getQuantity())
-                .minQuantity(item.getMinQuantity())
                 .price(item.getPrice())
                 .status(item.getStatus())
+                .minQuantity(item.getMinQuantity())
+                .maxQuantity(item.getMaxQuantity())
+                .supplier(item.getSupplier() != null ? SupplierDto.fromEntity(item.getSupplier()) : null)
                 .createdAt(item.getCreatedAt())
                 .updatedAt(item.getUpdatedAt())
+                .createdBy(item.getCreatedBy() != null ? UserDto.fromEntity(item.getCreatedBy()) : null)
+                .updatedBy(item.getUpdatedBy() != null ? UserDto.fromEntity(item.getUpdatedBy()) : null)
                 .build();
     }
 }

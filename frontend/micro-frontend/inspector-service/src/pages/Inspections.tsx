@@ -1,57 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Plus, Eye, CheckCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
+import { getInspections } from '../services/inspectorService';
+import { useToast } from '../components/Toast';
 
 type InspectionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 interface Inspection {
   id: number;
+  inspectorId: number;
+  inspectorName: string;
   locationType: string;
   locationIdentifier: string;
   status: InspectionStatus;
+  notes?: string;
   startedAt: string;
   completedAt?: string;
-  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const Inspections: React.FC = () => {
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const { showSuccess, showError } = useToast();
+
+  const fetchInspections = async () => {
+    try {
+      const data = await getInspections();
+      setInspections(data || []);
+    } catch (error: any) {
+      console.error('Error fetching inspections:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          'Failed to fetch inspections. Please try again.';
+      showError('Failed to Load', errorMessage);
+      setInspections([]); // Set empty array on error
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    // TODO: Fetch inspections from API
-    setTimeout(() => {
-      setInspections([
-        {
-          id: 1,
-          locationType: 'ROOM',
-          locationIdentifier: '204',
-          status: 'IN_PROGRESS',
-          startedAt: '2024-01-15T10:30:00Z',
-          notes: 'Regular room inspection'
-        },
-        {
-          id: 2,
-          locationType: 'KITCHEN',
-          locationIdentifier: 'Main Kitchen',
-          status: 'COMPLETED',
-          startedAt: '2024-01-14T09:00:00Z',
-          completedAt: '2024-01-14T11:30:00Z',
-          notes: 'Monthly kitchen inspection completed'
-        },
-        {
-          id: 3,
-          locationType: 'ROOM',
-          locationIdentifier: '105',
-          status: 'COMPLETED',
-          startedAt: '2024-01-13T14:00:00Z',
-          completedAt: '2024-01-13T15:15:00Z',
-          notes: 'Found damaged items'
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchInspections();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchInspections();
+    showSuccess('Refreshed', 'Inspections list has been updated.');
+  };
 
   const getStatusIcon = (status: InspectionStatus) => {
     switch (status) {
@@ -103,7 +103,15 @@ const Inspections: React.FC = () => {
             View and manage your inspection activities
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex space-x-3">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`-ml-0.5 mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
           <Link
             to="/inspections/new"
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"

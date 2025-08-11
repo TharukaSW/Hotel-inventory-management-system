@@ -2,6 +2,8 @@
 export interface Category {
   id: number;
   name: string;
+  description?: string;
+  isActive?: boolean;
 }
 
 export interface Supplier {
@@ -16,10 +18,17 @@ export interface Supplier {
 export interface InventoryItem {
   id: number;
   name: string;
+  description?: string;
   category: Category;
   quantity: number;
   price: number;
   status: string;
+  minQuantity?: number;
+  maxQuantity?: number;
+  unitOfMeasurement?: string;
+  expiryDate?: string; // ISO date string
+  condition?: string;
+  warrantyExpiry?: string; // ISO date string
   createdDate: string; // ISO date string
   supplier: Supplier;
 }
@@ -71,10 +80,16 @@ export interface PaginatedResponse<T> {
 // Form types
 export interface InventoryItemForm {
   name: string;
+  description?: string;
   categoryId: number;
   quantity: number;
   price: number;
   status: string;
+  minQuantity?: number;
+  unitOfMeasurement?: string;
+  expiryDate?: string;
+  condition?: string;
+  warrantyExpiry?: string;
   supplierId: number;
 }
 

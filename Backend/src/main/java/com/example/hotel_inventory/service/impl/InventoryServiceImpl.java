@@ -41,6 +41,10 @@ public class InventoryServiceImpl implements InventoryService {
                 .price(request.getPrice())
                 .minQuantity(request.getMinQuantity())
                 .maxQuantity(request.getMaxQuantity())
+                .unitOfMeasurement(request.getUnitOfMeasurement())
+                .expiryDate(request.getExpiryDate())
+                .condition(request.getCondition())
+                .warrantyExpiry(request.getWarrantyExpiry())
                 .supplier(supplier)
                 .build();
 
@@ -65,6 +69,10 @@ public class InventoryServiceImpl implements InventoryService {
         existingItem.setPrice(request.getPrice());
         existingItem.setMinQuantity(request.getMinQuantity());
         existingItem.setMaxQuantity(request.getMaxQuantity());
+        existingItem.setUnitOfMeasurement(request.getUnitOfMeasurement());
+        existingItem.setExpiryDate(request.getExpiryDate());
+        existingItem.setCondition(request.getCondition());
+        existingItem.setWarrantyExpiry(request.getWarrantyExpiry());
         existingItem.setSupplier(supplier);
 
         return itemRepository.save(existingItem);

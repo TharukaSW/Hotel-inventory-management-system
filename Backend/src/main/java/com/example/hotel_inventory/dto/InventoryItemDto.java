@@ -23,6 +23,10 @@ public class InventoryItemDto {
     private InventoryItem.ItemStatus status;
     private int minQuantity;
     private int maxQuantity;
+    private String unitOfMeasurement;
+    private LocalDateTime expiryDate;
+    private String condition;
+    private LocalDateTime warrantyExpiry;
     private SupplierDto supplier;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -40,6 +44,10 @@ public class InventoryItemDto {
                 .status(item.getStatus())
                 .minQuantity(item.getMinQuantity())
                 .maxQuantity(item.getMaxQuantity())
+                .unitOfMeasurement(item.getUnitOfMeasurement())
+                .expiryDate(item.getExpiryDate())
+                .condition(item.getCondition())
+                .warrantyExpiry(item.getWarrantyExpiry())
                 .supplier(item.getSupplier() != null ? SupplierDto.fromEntity(item.getSupplier()) : null)
                 .createdAt(item.getCreatedAt())
                 .updatedAt(item.getUpdatedAt())

@@ -1,4 +1,4 @@
-import { InventoryItem, User } from '../types';
+import { User } from '../types';
 
 export const formatDate = (date: string | Date): string => {
   return new Date(date).toLocaleDateString('en-US', {

@@ -116,5 +116,35 @@ public class InspectorController {
         return ResponseEntity.ok(item);
     }
 
+    @GetMapping("/inventory/category/{categoryId}")
+    public ResponseEntity<List<InventoryItemDto>> getInventoryItemsByCategory(@PathVariable Long categoryId) {
+        List<InventoryItemDto> items = inspectorService.getInventoryItemsByCategory(categoryId);
+        return ResponseEntity.ok(items);
+    }
+
+    @GetMapping("/inventory/supplier/{supplierId}")
+    public ResponseEntity<List<InventoryItemDto>> getInventoryItemsBySupplier(@PathVariable Long supplierId) {
+        List<InventoryItemDto> items = inspectorService.getInventoryItemsBySupplier(supplierId);
+        return ResponseEntity.ok(items);
+    }
+
+    @GetMapping("/inventory/search")
+    public ResponseEntity<List<InventoryItemDto>> searchInventoryItems(@RequestParam String searchTerm) {
+        List<InventoryItemDto> items = inspectorService.searchInventoryItems(searchTerm);
+        return ResponseEntity.ok(items);
+    }
+
+    @GetMapping("/inventory/low-stock")
+    public ResponseEntity<List<InventoryItemDto>> getLowStockInventoryItems() {
+        List<InventoryItemDto> items = inspectorService.getLowStockInventoryItems();
+        return ResponseEntity.ok(items);
+    }
+
+    @GetMapping("/inventory/status/{status}")
+    public ResponseEntity<List<InventoryItemDto>> getInventoryItemsByStatus(@PathVariable String status) {
+        List<InventoryItemDto> items = inspectorService.getInventoryItemsByStatus(status);
+        return ResponseEntity.ok(items);
+    }
+
 }
 

@@ -31,4 +31,9 @@ public interface InspectorService {
     // Inventory View (Read-only)
     List<InventoryItemDto> getAllInventoryItems();
     InventoryItemDto getInventoryItemById(Long itemId);
+    List<InventoryItemDto> getInventoryItemsByCategory(Long categoryId);
+    List<InventoryItemDto> getInventoryItemsBySupplier(Long supplierId);
+    List<InventoryItemDto> searchInventoryItems(String searchTerm);
+    List<InventoryItemDto> getLowStockInventoryItems();
+    List<InventoryItemDto> getInventoryItemsByStatus(String status);
 }

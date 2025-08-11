@@ -15,7 +15,7 @@ const SupplierManagement: React.FC = () => {
     name: '', 
     phoneNumber: '', 
     email: '',
-    supplyItems: ''
+    supplyItem: ''
   });
 
   useEffect(() => {
@@ -25,12 +25,7 @@ const SupplierManagement: React.FC = () => {
   const fetchSuppliers = async () => {
     try {
       const data = await apiService.getAllSuppliers();
-      // Map supplyItem (from backend) to supplyItems (frontend)
-      const mapped = data.map(sup => ({
-        ...sup,
-        supplyItems: sup.supplyItem || ''
-      }));
-      setSuppliers(mapped);
+      setSuppliers(data);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
     } finally {
@@ -42,7 +37,7 @@ const SupplierManagement: React.FC = () => {
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     supplier.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    supplier.supplyItems?.toLowerCase().includes(searchTerm.toLowerCase())
+    supplier.supplyItem?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +53,7 @@ const SupplierManagement: React.FC = () => {
         const newSupplier = await apiService.createSupplier(formData);
         setSuppliers([...suppliers, newSupplier]);
       }
-      setFormData({ name: '', phoneNumber: '', email: '', supplyItems: '' });
+      setFormData({ name: '', phoneNumber: '', email: '', supplyItem: '' });
       setShowAddModal(false);
     } catch (error) {
       console.error('Error saving supplier:', error);
@@ -71,7 +66,7 @@ const SupplierManagement: React.FC = () => {
       name: supplier.name, 
       phoneNumber: supplier.phoneNumber || '', 
       email: supplier.email || '',
-      supplyItems: supplier.supplyItems || ''
+      supplyItem: supplier.supplyItem || ''
     });
     setShowAddModal(true);
   };
@@ -122,9 +117,9 @@ const SupplierManagement: React.FC = () => {
     },
     {
       header: 'Supply Items',
-      accessor: 'supplyItems',
+      accessor: 'supplyItem',
       render: (supplier) => (
-        <div className="text-gray-800">{supplier.supplyItems || 'N/A'}</div>
+        <div className="text-gray-800">{supplier.supplyItem || 'N/A'}</div>
       )
     },
     {
@@ -161,7 +156,7 @@ const SupplierManagement: React.FC = () => {
         <button
           onClick={() => {
             setEditingSupplier(null);
-            setFormData({ name: '', phoneNumber: '', email: '', supplyItems: '' });
+            setFormData({ name: '', phoneNumber: '', email: '', supplyItem: '' });
             setShowAddModal(true);
           }}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -252,14 +247,14 @@ const SupplierManagement: React.FC = () => {
                   />
                 </div>
                 <div className="mb-4">
-                  <label htmlFor="supplyItems" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="supplyItem" className="block text-sm font-medium text-gray-700 mb-2">
                     Supply Items
                   </label>
                   <input
                     type="text"
-                    id="supplyItems"
-                    value={formData.supplyItems}
-                    onChange={(e) => setFormData({ ...formData, supplyItems: e.target.value })}
+                    id="supplyItem"
+                    value={formData.supplyItem}
+                    onChange={(e) => setFormData({ ...formData, supplyItem: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter supply items (comma separated)"
                   />
@@ -270,7 +265,7 @@ const SupplierManagement: React.FC = () => {
                     onClick={() => {
                       setShowAddModal(false);
                       setEditingSupplier(null);
-                      setFormData({ name: '', phoneNumber: '', email: '', supplyItems: '' });
+                      setFormData({ name: '', phoneNumber: '', email: '', supplyItem: '' });
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                   >

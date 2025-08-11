@@ -55,7 +55,7 @@ const CategoryManagement: React.FC = () => {
     setEditingCategory(category);
     setFormData({
       name: category.name,
-      description:  category.description || '',
+      description: category.description || '',
       isActive: category.isActive !== undefined ? category.isActive : true,
     });
     setShowAddModal(true);

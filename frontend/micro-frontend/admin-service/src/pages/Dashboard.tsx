@@ -2,15 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   Package, 
   Users, 
-  TrendingUp, 
   AlertTriangle,
-  BarChart3,
   DollarSign,
   ShoppingCart,
   Building2
 } from 'lucide-react';
 import { apiService } from '@hotel-inventory/shared-lib';
-import { InventoryItem, Category, Supplier } from '@hotel-inventory/shared-lib';
+import { InventoryItem } from '@hotel-inventory/shared-lib';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({
@@ -205,23 +203,28 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">System Status</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Database</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Online
-              </span>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">New item request approved</p>
+                <p className="text-xs text-gray-500">2 minutes ago</p>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">API Services</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Online
-              </span>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">Inventory updated by admin</p>
+                <p className="text-xs text-gray-500">15 minutes ago</p>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Last Backup</span>
-              <span className="text-sm text-gray-900">2 hours ago</span>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">Low stock alert triggered</p>
+                <p className="text-xs text-gray-500">1 hour ago</p>
+              </div>
             </div>
           </div>
         </div>

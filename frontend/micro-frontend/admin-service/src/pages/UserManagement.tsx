@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, User, Shield } from 'lucide-react';
 import { Badge } from '@hotel-inventory/shared-lib';
+import { useToast } from '../components/ToastContainer';
+import { useConfirmation } from '../components/ConfirmationModal';
 
 const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,6 +21,8 @@ const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showSuccess, showError } = useToast();
+  const { confirm } = useConfirmation();
 
   // Fetch users from backend
   const fetchUsers = async () => {
@@ -57,7 +61,15 @@ const UserManagement: React.FC = () => {
 
   // Handle delete user
   const handleDeleteUser = async (userId: number) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) {
+    const confirmed = await confirm({
+      title: 'Delete User',
+      message: 'Are you sure you want to delete this user? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      type: 'danger'
+    });
+    
+    if (!confirmed) {
       return;
     }
     
@@ -69,10 +81,10 @@ const UserManagement: React.FC = () => {
       });
       if (!res.ok) throw new Error('Failed to delete user');
       await fetchUsers(); // Refresh the user list
-      alert('User deleted successfully!');
+      showSuccess('User deleted successfully!');
     } catch (err: any) {
       setError(err.message || 'Error deleting user');
-      alert('Failed to delete user: ' + err.message);
+      showError('Failed to delete user', err.message);
     } finally {
       setLoading(false);
     }
@@ -118,10 +130,10 @@ const UserManagement: React.FC = () => {
       setEditingUser(null);
       setFormData({ username: '', email: '', firstName: '', lastName: '', role: 'ADMIN', status: 'active', password: '' });
       await fetchUsers();
-      alert('User updated successfully!');
+      showSuccess('User updated successfully!');
     } catch (err: any) {
       setError(err.message || 'Error updating user');
-      alert('Failed to update user: ' + err.message);
+      showError('Failed to update user', err.message);
     } finally {
       setLoading(false);
     }
@@ -142,7 +154,7 @@ const UserManagement: React.FC = () => {
         return 'danger';
       case 'FRONT_DESK':
         return 'primary';
-      case 'STOCK_MANAGER':
+      case 'INSPECTOR':
         return 'warning';
       default:
         return 'default';
@@ -193,8 +205,10 @@ const UserManagement: React.FC = () => {
                   setShowAddModal(false);
                   setFormData({ username: '', email: '', firstName: '', lastName: '', role: 'ADMIN', status: 'active', password: '' });
                   await fetchUsers();
+                  showSuccess('User created successfully!');
                 } catch (err: any) {
                   setError(err.message || 'Error adding user');
+                  showError('Failed to create user', err.message);
                 } finally {
                   setLoading(false);
                 }
@@ -250,7 +264,7 @@ const UserManagement: React.FC = () => {
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="FRONT_DESK">Front Desk</option>
-                  <option value="STOCK_MANAGER">Stock Manager</option>
+                  <option value="INSPECTOR">Inspector</option>
                 </select>
               </div>
               <div>
@@ -357,7 +371,7 @@ const UserManagement: React.FC = () => {
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="FRONT_DESK">Front Desk</option>
-                  <option value="STOCK_MANAGER">Stock Manager</option>
+                  <option value="INSPECTOR">Inspector</option>
                 </select>
               </div>
               <div>
@@ -529,13 +543,13 @@ const UserManagement: React.FC = () => {
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center mb-3">
               <Shield className="h-5 w-5 text-yellow-600 mr-2" />
-              <h4 className="font-medium text-gray-900">Stock Manager</h4>
+              <h4 className="font-medium text-gray-900">Inspector</h4>
             </div>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Inventory management</li>
-              <li>• Stock transactions</li>
-              <li>• Supplier management</li>
-              <li>• Inventory reports</li>
+              <li>• Inventory inspections</li>
+              <li>• Item requests</li>
+              <li>• Quality assessments</li>
+              <li>• Inspection reports</li>
             </ul>
           </div>
         </div>

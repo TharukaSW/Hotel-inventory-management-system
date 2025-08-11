@@ -6,10 +6,10 @@ import {
   Users, 
   Building2, 
   FileText, 
-  Settings,
   LogOut,
   Menu,
-  X
+  X,
+  ClipboardList
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -23,6 +23,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: BarChart3 },
     { name: 'Inventory', href: '/inventory', icon: Package },
+    { name: 'Item Requests', href: '/item-requests', icon: ClipboardList },
     { name: 'Categories', href: '/categories', icon: Building2 },
     { name: 'Suppliers', href: '/suppliers', icon: Users },
     { name: 'Users', href: '/users', icon: Users },
