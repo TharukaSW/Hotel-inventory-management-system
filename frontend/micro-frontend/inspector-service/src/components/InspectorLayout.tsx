@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home,
@@ -7,9 +7,7 @@ import {
   Package,
   PlusCircle,
   Menu,
-  X,
-  LogOut,
-  User
+  X
 } from 'lucide-react';
 
 interface InspectorLayoutProps {
@@ -19,27 +17,6 @@ interface InspectorLayoutProps {
 const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  // Get current user from localStorage
-  useEffect(() => {
-    const storedUser = localStorage.getItem('hotel-inventory-user');
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
-    }
-  }, []);
-
-  const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem('hotel-inventory-user');
-    localStorage.removeItem('hotel-inventory-token');
-    // Redirect to auth service
-    window.location.href = 'http://localhost:3001/login';
-  };
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -116,30 +93,6 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
               );
             })}
           </nav>
-          <div className="border-t border-gray-200 p-4">
-            {currentUser && (
-              <div className="flex items-center mb-3 px-2 py-2">
-                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                  <User className="h-4 w-4 text-green-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">
-                    {currentUser.firstName} {currentUser.lastName}
-                  </div>
-                  <div className="text-xs text-gray-500 truncate">
-                    {currentUser.role}
-                  </div>
-                </div>
-              </div>
-            )}
-            <button 
-              onClick={handleLogout}
-              className="flex items-center w-full px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors"
-            >
-              <LogOut className="mr-3 h-5 w-5" />
-              Logout
-            </button>
-          </div>
         </div>
       </div>
 
@@ -157,32 +110,9 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex flex-1"></div>
             <div className="flex items-center gap-x-4 lg:gap-x-6">
-              {currentUser ? (
-                <div className="flex items-center gap-x-3">
-                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                    <User className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div className="hidden md:block">
-                    <div className="text-sm font-medium text-gray-900">
-                      {currentUser.firstName} {currentUser.lastName}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {currentUser.role}
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Logout"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-x-2">
-                  <span className="text-sm text-gray-700">Loading...</span>
-                </div>
-              )}
+              <div className="flex items-center gap-x-2">
+                <span className="text-sm text-gray-700">Inspector User</span>
+              </div>
             </div>
           </div>
         </div>
