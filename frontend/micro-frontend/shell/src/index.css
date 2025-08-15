@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+/* Ensure iframe pages use most of the viewport */
+.shell-iframe {
+  width: 100%;
+  height: calc(100vh - 6rem); /* header + padding */
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 0.5rem; /* rounded */
+  background: white;
+}
