@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { apiService, Table } from '@hotel-inventory/shared-lib';
+import { useConfirmation } from '../components/ConfirmationModal';
 import { Category , TableColumn } from '@hotel-inventory/shared-lib';
 
 
@@ -11,6 +12,7 @@ const CategoryManagement: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', isActive: true });
+  const { confirm } = useConfirmation();
 
   useEffect(() => {
     fetchCategories();
@@ -62,13 +64,20 @@ const CategoryManagement: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      try {
-        await apiService.deleteCategory(id);
-        setCategories(categories.filter(cat => cat.id !== id));
-      } catch (error) {
-        console.error('Error deleting category:', error);
-      }
+    try {
+      const confirmed = await confirm({
+        title: 'Delete Category',
+        message: 'Are you sure you want to delete this category? This action cannot be undone.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        type: 'danger'
+      });
+      if (!confirmed) return;
+      await apiService.deleteCategory(id);
+      // Re-fetch to ensure list stays in sync with server (avoids stale derived filters)
+      await fetchCategories();
+    } catch (error) {
+      console.error('Error deleting category:', error);
     }
   };
 

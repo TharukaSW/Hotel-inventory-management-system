@@ -1,17 +1,15 @@
 package com.example.hotel_inventory.config;
 
-import com.example.hotel_inventory.model.Category;
-import com.example.hotel_inventory.model.InventoryItem;
-import com.example.hotel_inventory.model.Supplier;
-import com.example.hotel_inventory.repository.CategoryRepository;
-import com.example.hotel_inventory.repository.InventoryItemRepository;
-import com.example.hotel_inventory.repository.SupplierRepository;
+import com.example.hotel_inventory.model.*;
+import com.example.hotel_inventory.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,6 +21,9 @@ public class DataInitializer implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final SupplierRepository supplierRepository;
     private final InventoryItemRepository inventoryItemRepository;
+    private final UserRepository userRepository;
+    private final FrontdeskRepository frontdeskRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
@@ -33,6 +34,9 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Sample data already exists, skipping initialization");
             return;
         }
+        
+        // Create sample users first
+        createUsers();
         
         // Create sample categories
         List<Category> categories = Arrays.asList(
@@ -144,6 +148,104 @@ public class DataInitializer implements CommandLineRunner {
         items = inventoryItemRepository.saveAll(items);
         log.info("Created {} inventory items", items.size());
         
+        // Create sample frontdesk data
+        createFrontdeskData();
+        
         log.info("Sample data initialization completed successfully!");
+    }
+    
+    private void createUsers() {
+        List<User> users = Arrays.asList(
+            User.builder()
+                .username("admin")
+                .email("admin@hotel.com")
+                .password(passwordEncoder.encode("admin123"))
+                .firstName("System")
+                .lastName("Administrator")
+                .role(User.UserRole.ADMIN)
+                .isActive(true)
+                .build(),
+            User.builder()
+                .username("frontdesk")
+                .email("frontdesk@hotel.com")
+                .password(passwordEncoder.encode("front123"))
+                .firstName("Front")
+                .lastName("Desk")
+                .role(User.UserRole.FRONT_DESK)
+                .isActive(true)
+                .build(),
+            User.builder()
+                .username("stockmanager")
+                .email("stock@hotel.com")
+                .password(passwordEncoder.encode("stock123"))
+                .firstName("Stock")
+                .lastName("Manager")
+                .role(User.UserRole.STOCK_MANAGER)
+                .isActive(true)
+                .build(),
+            User.builder()
+                .username("inspector")
+                .email("inspector@hotel.com")
+                .password(passwordEncoder.encode("inspect123"))
+                .firstName("Room")
+                .lastName("Inspector")
+                .role(User.UserRole.INSPECTOR)
+                .isActive(true)
+                .build()
+        );
+        
+        users = userRepository.saveAll(users);
+        log.info("Created {} users", users.size());
+    }
+    
+    private void createFrontdeskData() {
+        List<Frontdesk> reservations = Arrays.asList(
+            Frontdesk.builder()
+                .guestName("Alice Johnson")
+                .guestEmail("alice@email.com")
+                .guestPhone("+1-555-1001")
+                .roomNumber("101")
+                .roomType("Standard")
+                .numberOfGuests(2)
+                .expectedCheckIn(LocalDateTime.now().plusDays(1))
+                .expectedCheckOut(LocalDateTime.now().plusDays(4))
+                .totalAmount(450.00)
+                .paymentStatus(Frontdesk.PaymentStatus.PAID)
+                .status(Frontdesk.BookingStatus.RESERVED)
+                .createdBy("frontdesk")
+                .build(),
+            Frontdesk.builder()
+                .guestName("Bob Smith")
+                .guestEmail("bob@email.com")
+                .guestPhone("+1-555-1002")
+                .roomNumber("205")
+                .roomType("Deluxe")
+                .numberOfGuests(1)
+                .expectedCheckIn(LocalDateTime.now().plusDays(2))
+                .expectedCheckOut(LocalDateTime.now().plusDays(6))
+                .totalAmount(600.00)
+                .paymentStatus(Frontdesk.PaymentStatus.PENDING)
+                .status(Frontdesk.BookingStatus.RESERVED)
+                .createdBy("frontdesk")
+                .build(),
+            Frontdesk.builder()
+                .guestName("Carol Davis")
+                .guestEmail("carol@email.com")
+                .guestPhone("+1-555-1003")
+                .roomNumber("301")
+                .roomType("Suite")
+                .numberOfGuests(4)
+                .expectedCheckIn(LocalDateTime.now().minusDays(1))
+                .expectedCheckOut(LocalDateTime.now().plusDays(2))
+                .checkInDate(LocalDateTime.now().minusDays(1))
+                .totalAmount(800.00)
+                .paymentStatus(Frontdesk.PaymentStatus.PAID)
+                .status(Frontdesk.BookingStatus.CHECKED_IN)
+                .createdBy("frontdesk")
+                .build()
+        );
+        
+        reservations = frontdeskRepository.saveAll(reservations);
+        log.info("Created {} frontdesk reservations", reservations.size());
     }
 }

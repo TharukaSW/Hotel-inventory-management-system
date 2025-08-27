@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home,
@@ -17,6 +17,26 @@ interface InspectorLayoutProps {
 const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [checked, setChecked] = useState(false);
+
+  // Pull user from sessionStorage populated by shell auth events
+  useEffect(() => {
+    const stored = sessionStorage.getItem('user');
+    if (stored) {
+      try { setUser(JSON.parse(stored)); } catch {}
+    }
+    setChecked(true);
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data.type === 'AUTH_LOGIN' && e.data.user) {
+        setUser(e.data.user);
+      } else if (e.data.type === 'AUTH_LOGOUT') {
+        setUser(null);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -29,6 +49,30 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+
+  if (!checked) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-600">
+        Not authenticated. Please login via shell.
+      </div>
+    );
+  }
+
+  if (user.role !== 'INSPECTOR' && user.role !== 'ADMIN') {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-600">
+        Access denied. Role not permitted for inspector service.
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,7 +155,8 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
             <div className="flex flex-1"></div>
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               <div className="flex items-center gap-x-2">
-                <span className="text-sm text-gray-700">Inspector User</span>
+                <span className="text-sm text-gray-700">{user.firstName || 'Inspector'} {user.lastName || ''}</span>
+                <span className="text-xs text-gray-500 capitalize">{user.role.toLowerCase().replace('_',' ')}</span>
               </div>
             </div>
           </div>

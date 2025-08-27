@@ -1,18 +1,27 @@
 package com.example.hotel_inventory.controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.hotel_inventory.dto.InventoryItemDto;
 import com.example.hotel_inventory.dto.InventoryStats;
 import com.example.hotel_inventory.dto.request.CreateInventoryItemRequest;
 import com.example.hotel_inventory.model.InventoryItem;
 import com.example.hotel_inventory.model.StockTransaction;
 import com.example.hotel_inventory.service.InventoryService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/inventory")
@@ -20,18 +29,21 @@ import java.util.stream.Collectors;
 public class InventoryController {
     private final InventoryService inventoryService;
 
+    // Authentication/authorization removed – endpoint is public
     @PostMapping
     public ResponseEntity<InventoryItemDto> addItem(@Valid @RequestBody CreateInventoryItemRequest request) {
         InventoryItem item = inventoryService.addItem(request);
         return ResponseEntity.ok(InventoryItemDto.fromEntity(item));
     }
 
+    // Public
     @PutMapping("/{id}")
     public ResponseEntity<InventoryItemDto> updateItem(@PathVariable Long id, @Valid @RequestBody CreateInventoryItemRequest request) {
         InventoryItem item = inventoryService.updateItem(id, request);
         return ResponseEntity.ok(InventoryItemDto.fromEntity(item));
     }
 
+    // Public
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
         inventoryService.deleteItem(id);

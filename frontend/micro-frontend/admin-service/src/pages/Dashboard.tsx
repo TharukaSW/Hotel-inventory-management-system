@@ -21,39 +21,97 @@ const Dashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [recentItems, setRecentItems] = useState<InventoryItem[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
 
+  const fetchDashboardData = async () => {
+    if (!isAuthenticated) return;
+    try {
+      setLoading(true);
+      const [items, categories, suppliers] = await Promise.all([
+        apiService.getAllInventoryItems(),
+        apiService.getAllCategories(),
+        apiService.getAllSuppliers()
+      ]);
+      const lowStockItems = items.filter(item => item.quantity <= 10 && item.quantity > 0);
+      const outOfStockItems = items.filter(item => item.quantity === 0);
+      const totalValue = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      setStats({
+        totalItems: items.length,
+        totalCategories: categories.length,
+        totalSuppliers: suppliers.length,
+        lowStockItems: lowStockItems.length,
+        outOfStockItems: outOfStockItems.length,
+        totalValue
+      });
+      setRecentItems(items.slice(0, 5));
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial auth check via backend cookie
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const checkAuthDirect = async () => {
       try {
-        const [items, categories, suppliers] = await Promise.all([
-          apiService.getAllInventoryItems(),
-          apiService.getAllCategories(),
-          apiService.getAllSuppliers()
-        ]);
-
-        const lowStockItems = items.filter(item => item.quantity <= 10 && item.quantity > 0);
-        const outOfStockItems = items.filter(item => item.quantity === 0);
-        const totalValue = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-        setStats({
-          totalItems: items.length,
-          totalCategories: categories.length,
-          totalSuppliers: suppliers.length,
-          lowStockItems: lowStockItems.length,
-          outOfStockItems: outOfStockItems.length,
-          totalValue
-        });
-
-        setRecentItems(items.slice(0, 5));
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        const user = await apiService.currentUser();
+        if (user && user.id) {
+          setIsAuthenticated(true);
+        }
+      } catch (e) {
+        // not authenticated; wait for postMessage
       } finally {
-        setLoading(false);
+        setAuthChecked(true);
       }
     };
-
-    fetchDashboardData();
+    checkAuthDirect();
   }, []);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'AUTH_LOGIN') {
+        setIsAuthenticated(true);
+        setAuthChecked(true);
+        setTimeout(() => fetchDashboardData(), 0);
+      } else if (event.data.type === 'AUTH_LOGOUT') {
+        setIsAuthenticated(false);
+        setAuthChecked(true);
+        setStats({
+          totalItems: 0,
+          totalCategories: 0,
+          totalSuppliers: 0,
+          lowStockItems: 0,
+          outOfStockItems: 0,
+          totalValue: 0
+        });
+        setRecentItems([]);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    window.postMessage({ type: 'REQUEST_AUTH_STATE' }, '*');
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) fetchDashboardData();
+  }, [isAuthenticated]);
+
+  // Once auth has been checked and user not authenticated, show message
+  if (!isAuthenticated && authChecked) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <p className="text-gray-600">You must be logged in as admin to view the dashboard.</p>
+        <button
+          onClick={() => window.location.href = '/'}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Go to Login
+        </button>
+      </div>
+    );
+  }
 
   const statCards = [
     {
@@ -106,7 +164,7 @@ const Dashboard: React.FC = () => {
     }
   ];
 
-  if (loading) {
+  if (loading && isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -233,4 +291,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

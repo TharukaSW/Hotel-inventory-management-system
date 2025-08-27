@@ -4,7 +4,8 @@ const apiClient = axios.create({
     baseURL: 'http://localhost:8082/api/inspector',
     headers: {
         'Content-Type': 'application/json',
-    }
+    },
+    withCredentials: true  // Include cookies for authentication
 });
 
 export const createItemRequest = async (data: any) => {

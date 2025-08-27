@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Mail, Phone } from 'lucide-react';
 import { apiService, Table } from '@hotel-inventory/shared-lib';
+import { useConfirmation } from '../components/ConfirmationModal';
 import { Supplier, TableColumn } from '@hotel-inventory/shared-lib';
 
 
@@ -17,6 +18,7 @@ const SupplierManagement: React.FC = () => {
     email: '',
     supplyItem: ''
   });
+  const { confirm } = useConfirmation();
 
   useEffect(() => {
     fetchSuppliers();
@@ -72,13 +74,19 @@ const SupplierManagement: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this supplier?')) {
-      try {
-        await apiService.deleteSupplier(id);
-        setSuppliers(suppliers.filter(sup => sup.id !== id));
-      } catch (error) {
-        console.error('Error deleting supplier:', error);
-      }
+    try {
+      const confirmed = await confirm({
+        title: 'Delete Supplier',
+        message: 'Delete this supplier? This action cannot be undone.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        type: 'danger'
+      });
+      if (!confirmed) return;
+      await apiService.deleteSupplier(id);
+      await fetchSuppliers();
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
     }
   };
 

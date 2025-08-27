@@ -12,31 +12,69 @@ import {
 const API_BASE_URL = 'http://localhost:8082/api';
 
 class ApiService {
+  // Cookie-based auth only; no bearer header. JWT is sent automatically via HttpOnly cookie.
+  private getBaseHeaders(): HeadersInit {
+    return { 'Content-Type': 'application/json' };
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${API_BASE_URL}${endpoint}`;
+  const baseHeaders = this.getBaseHeaders();
     const config: RequestInit = {
       headers: {
-        'Content-Type': 'application/json',
+        ...baseHeaders,
         ...options.headers,
       },
+      credentials: 'include', // send cookies (auth-token, refresh-token)
       ...options,
     };
+
+    console.log('🔍 Making request to:', url);
+    console.log('🔍 Request config:', {
+      method: config.method || 'GET',
+      headers: config.headers,
+      credentials: config.credentials
+    });
 
     try {
       const response = await fetch(url, config);
       
       if (!response.ok) {
+        if (response.status === 401) {
+          // Redirect to root/login without clearing cookies (server manages them)
+          window.location.href = '/';
+          throw new Error('Authentication required');
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
+      // If no content
+      if (response.status === 204) return undefined as unknown as T;
       return await response.json();
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
     }
+  }
+
+  // Authentication (cookie-based)
+  async login(email: string, password: string): Promise<any> {
+    const result = await this.request<any>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    return result;
+  }
+
+  async logout(): Promise<void> {
+    await this.request<void>('/auth/logout', { method: 'POST' });
+  }
+
+  async currentUser(): Promise<any> {
+    return this.request<any>('/auth/me');
   }
 
   // Inventory Items
@@ -199,23 +237,6 @@ class ApiService {
     return this.request<any>('/admin/reports/suppliers');
   }
 
-  // Mock authentication (since backend doesn't have auth yet)
-  async login(username: string, _password: string): Promise<any> {
-    // Mock login - replace with actual auth endpoint when available
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: 1,
-          username,
-          email: `${username}@hotel.com`,
-          role: 'ADMIN',
-          firstName: 'Admin',
-          lastName: 'User'
-        });
-      }, 1000);
-    });
-  }
-
   // Bulk operations
   async bulkUpdateInventory(updates: any[]): Promise<InventoryItem[]> {
     return this.request<InventoryItem[]>('/inventory/bulk-update', {
@@ -239,7 +260,20 @@ class ApiService {
     });
     return response.blob();
   }
+
+  // Item Requests
+  async getItemRequests(): Promise<any[]> {
+    return this.request<any[]>('/admin/item-requests');
+  }
+
+  async approveItemRequest(id: number): Promise<any> {
+    return this.request<any>(`/admin/item-requests/${id}/approve`, { method: 'POST' });
+  }
+
+  async rejectItemRequest(id: number, rejectionNotes: string): Promise<any> {
+    return this.request<any>(`/admin/item-requests/${id}/reject?rejectionNotes=${encodeURIComponent(rejectionNotes)}`, { method: 'POST' });
+  }
 }
 
 export const apiService = new ApiService();
-export default apiService; 
+export default apiService;

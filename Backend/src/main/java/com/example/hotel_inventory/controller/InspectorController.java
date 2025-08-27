@@ -1,22 +1,31 @@
 package com.example.hotel_inventory.controller;
 
-import com.example.hotel_inventory.dto.*;
-import com.example.hotel_inventory.dto.request.CreateInspectionRequest;
-import com.example.hotel_inventory.dto.request.CreateItemRequestRequest;
-import com.example.hotel_inventory.dto.response.ApiResponse;
-import com.example.hotel_inventory.service.InspectorService;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.hotel_inventory.dto.InspectionDto;
+import com.example.hotel_inventory.dto.InspectionItemDto;
+import com.example.hotel_inventory.dto.InventoryItemDto;
+import com.example.hotel_inventory.dto.ItemRequestDto;
+import com.example.hotel_inventory.dto.request.CreateInspectionRequest;
+import com.example.hotel_inventory.dto.request.CreateItemRequestRequest;
+import com.example.hotel_inventory.service.InspectorService;
 
 import jakarta.validation.Valid;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/inspector")
-@CrossOrigin(origins = {"http://localhost:3005", "http://localhost:3000", "*"})
 public class InspectorController {
 
     @Autowired
@@ -33,9 +42,14 @@ public class InspectorController {
 
     @GetMapping("/item-requests")
     public ResponseEntity<List<ItemRequestDto>> getMyItemRequests() {
-        Long inspectorId = 1L; // Default inspector for development
-        List<ItemRequestDto> requests = inspectorService.getMyItemRequests(inspectorId);
-        return ResponseEntity.ok(requests);
+        try {
+            Long inspectorId = 1L; // Default inspector for development
+            List<ItemRequestDto> requests = inspectorService.getMyItemRequests(inspectorId);
+            return ResponseEntity.ok(requests);
+        } catch (Exception e) {
+            // Return empty list instead of error for development
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @GetMapping("/item-requests/{requestId}")
@@ -55,9 +69,14 @@ public class InspectorController {
 
     @GetMapping("/inspections")
     public ResponseEntity<List<InspectionDto>> getMyInspections() {
-        Long inspectorId = 1L; // Default inspector for development
-        List<InspectionDto> inspections = inspectorService.getMyInspections(inspectorId);
-        return ResponseEntity.ok(inspections);
+        try {
+            Long inspectorId = 1L; // Default inspector for development
+            List<InspectionDto> inspections = inspectorService.getMyInspections(inspectorId);
+            return ResponseEntity.ok(inspections);
+        } catch (Exception e) {
+            // Return empty list instead of error for development
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @GetMapping("/inspections/{inspectionId}")
@@ -106,8 +125,13 @@ public class InspectorController {
     // Inventory view endpoints (read-only)
     @GetMapping("/inventory")
     public ResponseEntity<List<InventoryItemDto>> getAllInventoryItems() {
-        List<InventoryItemDto> items = inspectorService.getAllInventoryItems();
-        return ResponseEntity.ok(items);
+        try {
+            List<InventoryItemDto> items = inspectorService.getAllInventoryItems();
+            return ResponseEntity.ok(items);
+        } catch (Exception e) {
+            // Return empty list instead of error for development
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @GetMapping("/inventory/{itemId}")

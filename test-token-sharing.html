@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Token Sharing</title>
+</head>
+<body>
+    <h1>Token Sharing Test</h1>
+    <div>
+        <button onclick="simulateLogin()">Simulate Login</button>
+        <button onclick="simulateAuthRequest()">Simulate Auth State Request</button>
+        <button onclick="checkTokens()">Check Stored Tokens</button>
+        <button onclick="clearTokens()">Clear Tokens</button>
+    </div>
+    
+    <div id="output" style="margin-top: 20px; padding: 10px; background: #f0f0f0; font-family: monospace; white-space: pre-wrap;"></div>
+    
+    <iframe id="adminFrame" src="http://localhost:3008" style="width: 100%; height: 500px; margin-top: 20px;"></iframe>
+
+    <script>
+        const output = document.getElementById('output');
+        const adminFrame = document.getElementById('adminFrame');
+        
+        function log(message) {
+            output.textContent += new Date().toISOString() + ': ' + message + '\n';
+        }
+        
+        function simulateLogin() {
+            const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJzYW1wbGVhZG1pbkBob3RlbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3MzI1NDEyOTAsImV4cCI6MTczMjU0NDg5MH0.FXhVdGCdx7jQhNJtNE2dDcAf8lFu8WLWtv3ov9-wN1o';
+            const mockUser = {
+                id: 1,
+                email: 'sampleadmin@hotel.com',
+                role: 'ADMIN',
+                isActive: true
+            };
+            
+            // Store tokens locally (simulating shell)
+            sessionStorage.setItem('accessToken', mockToken);
+            localStorage.setItem('token', mockToken);
+            
+            // Send message to admin iframe
+            adminFrame.contentWindow.postMessage({
+                type: 'AUTH_LOGIN',
+                user: mockUser,
+                accessToken: mockToken,
+                refreshToken: 'mock-refresh-token'
+            }, '*');
+            
+            log('Sent AUTH_LOGIN message to admin service with token: ' + mockToken.substring(0, 50) + '...');
+        }
+        
+        function simulateAuthRequest() {
+            // Simulate what admin service does on load
+            window.postMessage({ type: 'REQUEST_AUTH_STATE' }, '*');
+            log('Sent REQUEST_AUTH_STATE message');
+        }
+        
+        function checkTokens() {
+            const sessionToken = sessionStorage.getItem('accessToken');
+            const localToken = localStorage.getItem('token');
+            
+            log('Main window tokens:');
+            log('  sessionStorage accessToken: ' + (sessionToken ? sessionToken.substring(0, 50) + '...' : 'null'));
+            log('  localStorage token: ' + (localToken ? localToken.substring(0, 50) + '...' : 'null'));
+            
+            // Ask admin iframe to check its tokens
+            adminFrame.contentWindow.postMessage({ type: 'CHECK_TOKENS' }, '*');
+        }
+        
+        function clearTokens() {
+            sessionStorage.clear();
+            localStorage.clear();
+            
+            adminFrame.contentWindow.postMessage({ type: 'AUTH_LOGOUT' }, '*');
+            log('Cleared all tokens and sent logout message');
+        }
+        
+        // Listen for messages from admin service
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'REQUEST_AUTH_STATE') {
+                log('Received REQUEST_AUTH_STATE from admin service');
+                
+                // Send current auth state if available
+                const accessToken = sessionStorage.getItem('accessToken');
+                if (accessToken) {
+                    event.source.postMessage({
+                        type: 'AUTH_LOGIN',
+                        user: { id: 1, email: 'sampleadmin@hotel.com', role: 'ADMIN' },
+                        accessToken: accessToken,
+                        refreshToken: 'mock-refresh-token'
+                    }, '*');
+                    log('Sent current auth state to admin service');
+                }
+            } else if (event.data.type === 'TOKEN_CHECK_RESULT') {
+                log('Admin service tokens:');
+                log('  sessionStorage accessToken: ' + (event.data.sessionToken ? event.data.sessionToken.substring(0, 50) + '...' : 'null'));
+                log('  localStorage token: ' + (event.data.localToken ? event.data.localToken.substring(0, 50) + '...' : 'null'));
+            }
+        });
+        
+        log('Test page loaded. Use buttons to test token sharing mechanism.');
+    </script>
+</body>
+</html>

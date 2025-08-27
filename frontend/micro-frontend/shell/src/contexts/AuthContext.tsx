@@ -1,0 +1,209 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+export interface User {
+  id: number;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: string;
+  isActive: boolean;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<boolean>;
+  getAuthToken: () => string | null;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const isAuthenticated = !!user;
+
+  const API_BASE_URL = 'http://localhost:8082/api';
+
+  const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
+    const response = await fetch(url, {
+      ...options,
+      credentials: 'include', // Include HTTP-only cookies
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+    return response;
+  };
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      const response = await makeAuthenticatedRequest(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          setUser(data.user);
+          
+          // Store access token in both sessionStorage and localStorage for compatibility
+          // Broadcast login event (no tokens stored client-side; cookies carry auth)
+          window.postMessage({ 
+            type: 'AUTH_LOGIN', 
+            user: data.user
+          }, '*');
+          
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async (): Promise<void> => {
+    try {
+      await makeAuthenticatedRequest(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+  // Broadcast logout event
+  window.postMessage({ type: 'AUTH_LOGOUT' }, '*');
+    }
+  };
+
+  const checkAuth = async (): Promise<boolean> => {
+    try {
+      const response = await makeAuthenticatedRequest(`${API_BASE_URL}/auth/me`);
+      
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        return true;
+      } else if (response.status === 401) {
+        // Try to refresh token
+        const refreshResponse = await tryRefreshToken();
+        if (refreshResponse) {
+          return await checkAuth(); // Retry after refresh
+        }
+      }
+      
+      setUser(null);
+      return false;
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setUser(null);
+      return false;
+    }
+  };
+
+  const tryRefreshToken = async (): Promise<boolean> => {
+    try {
+      // Send empty body; server reads refresh token cookie (HttpOnly)
+      const response = await makeAuthenticatedRequest(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken: '' })
+      });
+      if (response.ok) {
+        const data = await response.json();
+  if (data.success) return true;
+      }
+      return false;
+    } catch (error) {
+      // Don't log error to console on login screen
+      return false;
+    }
+  };
+
+  const getAuthToken = (): string | null => {
+  return null; // No bearer token stored; rely purely on cookies
+  };
+
+  // Check authentication on mount, but only if a token exists
+  useEffect(() => {
+    const initAuth = async () => {
+      setIsLoading(true);
+  // Always attempt auth check; server will use cookies
+  await checkAuth();
+      setIsLoading(false);
+    };
+    initAuth();
+  }, []);
+
+  // Set up automatic token refresh
+  useEffect(() => {
+    if (isAuthenticated) {
+      const refreshInterval = setInterval(async () => {
+        await tryRefreshToken();
+      }, 15 * 60 * 1000); // Refresh every 15 minutes
+
+      return () => clearInterval(refreshInterval);
+    }
+  }, [isAuthenticated]);
+
+  // Listen for auth state requests from micro-frontends
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'REQUEST_AUTH_STATE') {
+        console.log('[Shell] Received REQUEST_AUTH_STATE from micro-frontend');
+        
+        // Send current auth state to requesting micro-frontend
+        if (isAuthenticated && user) {
+          const accessToken = getAuthToken();
+          const refreshToken = sessionStorage.getItem('refreshToken');
+          
+          window.postMessage({
+            type: 'AUTH_LOGIN',
+            user: user,
+            accessToken: accessToken,
+            refreshToken: refreshToken
+          }, '*');
+          
+          console.log('[Shell] Sent current auth state to micro-frontend');
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [isAuthenticated, user]);
+
+  const value = {
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+    checkAuth,
+    getAuthToken,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

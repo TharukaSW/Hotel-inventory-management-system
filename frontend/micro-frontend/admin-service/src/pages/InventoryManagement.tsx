@@ -85,9 +85,11 @@ const InventoryManagement: React.FC = () => {
     
     if (confirmed) {
       try {
-        await apiService.deleteInventoryItem(id);
-        setItems(items.filter(item => item.id !== id));
-        showSuccess('Item deleted successfully');
+  await apiService.deleteInventoryItem(id);
+  // Re-fetch items to ensure consistency (e.g., related counts)
+  const refreshed = await apiService.getAllInventoryItems();
+  setItems(refreshed);
+  showSuccess('Item deleted successfully');
       } catch (error) {
         console.error('Error deleting item:', error);
         showError('Failed to delete item');
