@@ -5,7 +5,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "inspection_items")
+// Using new table name to replace legacy 'inspection_items'
+@Table(name = "inspection_items_v2")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

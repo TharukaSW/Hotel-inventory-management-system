@@ -7,8 +7,7 @@ import CategoryManagement from './pages/CategoryManagement';
 import SupplierManagement from './pages/SupplierManagement';
 import UserManagement from './pages/UserManagement';
 import Reports from './pages/Reports';
-import AdminItemRequests from './pages/AdminItemRequests';
-import ItemRequests from './pages/ItemRequests';
+import ItemRequests from './pages/AdminItemRequests';
 import { ToastProvider } from './components/ToastContainer';
 import { ConfirmationProvider } from './components/ConfirmationModal';
 import './App.css';
@@ -83,7 +82,6 @@ function App() {
               <Route path="/users" element={<UserManagement />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/item-requests" element={<ItemRequests />} />
-              <Route path="/admin-item-requests" element={<AdminItemRequests />} />
             </Routes>
           </AdminLayout>
         </Router>

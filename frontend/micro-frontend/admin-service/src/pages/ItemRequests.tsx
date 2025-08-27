@@ -36,17 +36,26 @@ const ItemRequests: React.FC = () => {
   const [rejectionNotes, setRejectionNotes] = useState<{ [key: number]: string }>({});
   const [showRejectModal, setShowRejectModal] = useState<number | null>(null);
 
+  const apiBase = 'http://localhost:8082/api/admin';
+
+  const fetchJson = async (path: string, init?: RequestInit) => {
+    const res = await fetch(`${apiBase}${path}`, {
+      credentials: 'include',
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers || {})
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
+  };
+
   const fetchRequests = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('http://localhost:8082/api/admin/item-requests');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = await fetchJson('/item-requests');
       setRequests(data);
     } catch (err) {
       console.error('Error fetching item requests:', err);
@@ -66,19 +75,7 @@ const ItemRequests: React.FC = () => {
       setProcessingId(requestId);
       setError(null);
       
-      const response = await fetch(`http://localhost:8082/api/admin/item-requests/${requestId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || `HTTP error! status: ${response.status}`);
-      }
-
-      const approvedRequest = await response.json();
+  const approvedRequest = await fetchJson(`/item-requests/${requestId}/approve`, { method: 'POST' });
       
       // Update the request in the list
       setRequests(prevRequests => 
@@ -105,19 +102,7 @@ const ItemRequests: React.FC = () => {
       setProcessingId(requestId);
       setError(null);
       
-      const response = await fetch(`http://localhost:8082/api/admin/item-requests/${requestId}/reject?rejectionNotes=${encodeURIComponent(notes)}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || `HTTP error! status: ${response.status}`);
-      }
-
-      const rejectedRequest = await response.json();
+  const rejectedRequest = await fetchJson(`/item-requests/${requestId}/reject?rejectionNotes=${encodeURIComponent(notes)}`, { method: 'POST' });
       
       // Update the request in the list
       setRequests(prevRequests => 

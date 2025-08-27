@@ -92,9 +92,18 @@ const NewInspection: React.FC = () => {
       
     } catch (error: any) {
       console.error('Error creating inspection:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          'Failed to create inspection. Please try again.';
+      // Attempt to extract validation errors shape from backend (GlobalExceptionHandler)
+      const validationErrors = error.response?.data?.errors;
+      if (validationErrors && typeof validationErrors === 'object') {
+        const mapped: FormErrors = {};
+        if (validationErrors.locationType) mapped.locationType = validationErrors.locationType;
+        if (validationErrors.locationIdentifier) mapped.locationIdentifier = validationErrors.locationIdentifier;
+        if (validationErrors.notes) mapped.notes = validationErrors.notes;
+        setErrors(mapped);
+      }
+      const errorMessage = validationErrors
+        ? 'Please correct the highlighted validation errors.'
+        : (error.response?.data?.message || error.message || 'Failed to create inspection. Please try again.');
       showError('Creation Failed', errorMessage);
     } finally {
       setLoading(false);

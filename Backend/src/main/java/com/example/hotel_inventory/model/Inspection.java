@@ -6,7 +6,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "inspections")
+// Using new table name to replace legacy 'inspections' schema
+@Table(name = "inspections_v2")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

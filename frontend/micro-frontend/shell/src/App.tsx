@@ -18,15 +18,20 @@ function AppContent() {
   // Listen for auth state requests from micro frontends
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return
-      
-      if (event.data.type === 'REQUEST_AUTH_STATE') {
-        // Send current auth state to requesting micro frontend
-        event.source?.postMessage({
-          type: 'AUTH_LOGIN',
-          user: user
-        }, { targetOrigin: event.origin })
-      } else if (event.data.type === 'LOGOUT_REQUEST') {
+      // Allow same hostname (different ports) so micro-frontends can request auth state
+      try {
+        const eventHost = new URL(event.origin).hostname
+        const thisHost = window.location.hostname
+        if (eventHost !== thisHost) return // different domain entirely
+      } catch {
+        // If parsing fails, ignore message
+        return
+      }
+
+      if (event.data?.type === 'REQUEST_AUTH_STATE') {
+        // Use casting to satisfy strict TS libs where overload expects WindowPostMessageOptions second argument now
+        (event.source as Window | null)?.postMessage({ type: 'AUTH_LOGIN', user }, '*')
+      } else if (event.data?.type === 'LOGOUT_REQUEST') {
         logout()
       }
     }
@@ -132,7 +137,7 @@ function AppContent() {
             <Route
               path="/frontdesk"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['FRONT_DESK','ADMIN']}>
                   <IframeView src="http://localhost:3003" title="Front Desk Service" />
                 </ProtectedRoute>
               }
@@ -140,8 +145,8 @@ function AppContent() {
             <Route
               path="/inspector"
               element={
-                <ProtectedRoute>
-                  <IframeView src="http://localhost:3007" title="Inspector Service" />
+                <ProtectedRoute allowedRoles={['INSPECTOR','ADMIN']}>
+                  <IframeView src="http://localhost:3004" title="Inspector Service" />
                 </ProtectedRoute>
               }
             />

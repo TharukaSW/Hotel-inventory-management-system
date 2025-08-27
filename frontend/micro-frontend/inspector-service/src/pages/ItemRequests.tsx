@@ -60,30 +60,7 @@ const ItemRequests: React.FC = () => {
       setRequests(data);
     } catch (err) {
       console.error('Failed to fetch requests:', err);
-      // Fallback to mock data if API fails
-      setRequests([
-        {
-          id: 1,
-          itemName: 'Towels',
-          requestedQuantity: 5,
-          locationType: 'ROOM',
-          locationIdentifier: '301',
-          reason: 'Replace damaged towels',
-          status: 'APPROVED',
-          createdAt: new Date().toISOString(),
-          approvedByName: 'Admin User'
-        },
-        {
-          id: 2,
-          itemName: 'Toilet Paper',
-          requestedQuantity: 10,
-          locationType: 'ROOM',
-          locationIdentifier: '204',
-          reason: 'Replenish stock',
-          status: 'PENDING',
-          createdAt: new Date().toISOString()
-        }
-      ]);
+      setRequests([]); // Show empty state instead of mock data now that backend is wired
     } finally {
       setLoading(false);
     }

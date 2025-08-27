@@ -1,5 +1,34 @@
 import axios from 'axios';
 
+// Shared DTO style TypeScript interfaces for stronger type-safety in pages
+export interface InspectionItemDto {
+    id?: number;
+    inspectionId?: number;
+    inventoryItemId: number;
+    itemName?: string;
+    expectedQuantity?: number;
+    actualQuantity?: number;
+    conditionStatus?: string; // e.g. GOOD / DAMAGED / MISSING
+    notes?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface InspectionDto {
+    id: number;
+    inspectorId?: number;
+    inspectorName?: string;
+    locationType: string;
+    locationIdentifier: string;
+    status: 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+    notes?: string;
+    startedAt: string;
+    completedAt?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    inspectionItems?: InspectionItemDto[];
+}
+
 const apiClient = axios.create({
     baseURL: 'http://localhost:8082/api/inspector',
     headers: {
@@ -43,7 +72,14 @@ export const createInspection = async (data: any) => {
         const response = await apiClient.post('/inspections', data);
         return response.data;
     } catch (error) {
-        console.error('Error creating inspection', error);
+        // Provide deeper visibility into backend validation / auth failures
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err: any = error;
+        console.error('Error creating inspection', err);
+        if (err.response) {
+            console.error('Inspection creation response status:', err.response.status);
+            console.error('Inspection creation response data:', err.response.data);
+        }
         throw error;
     }
 };
@@ -64,6 +100,26 @@ export const getInspectionById = async (id: number) => {
         return response.data;
     } catch (error) {
         console.error(`Error fetching inspection by id: ${id}`, error);
+        throw error;
+    }
+};
+
+export const updateInspection = async (id: number, data: Partial<InspectionDto>) => {
+    try {
+        const response = await apiClient.put(`/inspections/${id}`, data);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating inspection', error);
+        throw error;
+    }
+};
+
+export const completeInspection = async (id: number) => {
+    try {
+        const response = await apiClient.post(`/inspections/${id}/complete`, {});
+        return response.data;
+    } catch (error) {
+        console.error('Error completing inspection', error);
         throw error;
     }
 };

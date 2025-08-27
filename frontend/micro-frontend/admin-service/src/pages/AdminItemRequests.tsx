@@ -14,7 +14,8 @@ interface ItemRequestDto {
   rejectionNotes?: string;
 }
 
-const AdminItemRequests: React.FC = () => {
+// Canonical ItemRequests admin page (was AdminItemRequests)
+const ItemRequests: React.FC = () => {
   const [requests, setRequests] = useState<ItemRequestDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,4 +147,4 @@ const AdminItemRequests: React.FC = () => {
   );
 };
 
-export default AdminItemRequests;
+export default ItemRequests;

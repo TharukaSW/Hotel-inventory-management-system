@@ -2,8 +2,8 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop tables if they exist
-DROP TABLE IF EXISTS inspection_items;
-DROP TABLE IF EXISTS inspections;
+DROP TABLE IF EXISTS inspection_items_v2;
+DROP TABLE IF EXISTS inspections_v2;
 DROP TABLE IF EXISTS inventory_items;
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS suppliers;
@@ -101,28 +101,32 @@ CREATE TABLE frontdesk (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Create Inspections table
-CREATE TABLE inspections (
+-- Create new versioned Inspections table
+CREATE TABLE inspections_v2 (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    inspector_id BIGINT,
-    inspection_date DATE NOT NULL,
-    notes TEXT,
-    status ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'PENDING',
+    inspector_id BIGINT NOT NULL,
+    location_type VARCHAR(255) NOT NULL,
+    location_identifier VARCHAR(255) NOT NULL,
+    status ENUM('IN_PROGRESS','COMPLETED','CANCELLED') DEFAULT 'IN_PROGRESS',
+    notes VARCHAR(1000),
+    started_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (inspector_id) REFERENCES users(id)
 );
 
--- Create Inspection Items table
-CREATE TABLE inspection_items (
+-- Create new versioned Inspection Items table
+CREATE TABLE inspection_items_v2 (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    inspection_id BIGINT,
-    inventory_item_id BIGINT,
+    inspection_id BIGINT NOT NULL,
+    inventory_item_id BIGINT NOT NULL,
     expected_quantity INTEGER,
     actual_quantity INTEGER,
-    variance INTEGER,
+    condition_status VARCHAR(255),
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (inspection_id) REFERENCES inspections(id),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (inspection_id) REFERENCES inspections_v2(id),
     FOREIGN KEY (inventory_item_id) REFERENCES inventory_items(id)
 );

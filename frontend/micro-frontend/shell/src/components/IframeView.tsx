@@ -11,7 +11,7 @@ export default function IframeView({ src, title }: Props) {
       className="shell-iframe"
       src={src}
       title={title}
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-modals"
     />
   )
 }

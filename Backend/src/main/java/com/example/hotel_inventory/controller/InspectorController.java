@@ -21,29 +21,44 @@ import com.example.hotel_inventory.dto.ItemRequestDto;
 import com.example.hotel_inventory.dto.request.CreateInspectionRequest;
 import com.example.hotel_inventory.dto.request.CreateItemRequestRequest;
 import com.example.hotel_inventory.service.InspectorService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
+import com.example.hotel_inventory.security.UserPrincipal;
 
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/inspector")
+@Slf4j
 public class InspectorController {
 
     @Autowired
     private InspectorService inspectorService;
 
+    private Long currentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal up) {
+            return up.getId();
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
+    }
+
     // Item Request endpoints
     @PostMapping("/item-requests")
     public ResponseEntity<ItemRequestDto> createItemRequest(
             @Valid @RequestBody CreateItemRequestRequest request) {
-        Long inspectorId = 1L; // Default inspector for development
-        ItemRequestDto result = inspectorService.createItemRequest(request, inspectorId);
+    Long inspectorId = currentUserId();
+    ItemRequestDto result = inspectorService.createItemRequest(request, inspectorId);
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/item-requests")
     public ResponseEntity<List<ItemRequestDto>> getMyItemRequests() {
         try {
-            Long inspectorId = 1L; // Default inspector for development
+            Long inspectorId = currentUserId();
             List<ItemRequestDto> requests = inspectorService.getMyItemRequests(inspectorId);
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
@@ -62,15 +77,17 @@ public class InspectorController {
     @PostMapping("/inspections")
     public ResponseEntity<InspectionDto> createInspection(
             @Valid @RequestBody CreateInspectionRequest request) {
-        Long inspectorId = 1L; // Default inspector for development
+        Long inspectorId = currentUserId();
+        log.info("Creating inspection: inspectorId={}, locationType={}, locationIdentifier={}", inspectorId, request.getLocationType(), request.getLocationIdentifier());
         InspectionDto result = inspectorService.createInspection(request, inspectorId);
+        log.info("Created inspection id={} for inspectorId={}", result.getId(), inspectorId);
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/inspections")
     public ResponseEntity<List<InspectionDto>> getMyInspections() {
         try {
-            Long inspectorId = 1L; // Default inspector for development
+            Long inspectorId = currentUserId();
             List<InspectionDto> inspections = inspectorService.getMyInspections(inspectorId);
             return ResponseEntity.ok(inspections);
         } catch (Exception e) {
