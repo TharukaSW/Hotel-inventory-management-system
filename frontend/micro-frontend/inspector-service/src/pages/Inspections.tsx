@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Eye, CheckCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
-import { getInspections, getAllInspections } from '../services/inspectorService';
+import { getAllInspections } from '../services/inspectorService';
 import { useToast } from '../components/Toast';
 
 type InspectionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
@@ -25,28 +25,24 @@ const Inspections: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { showSuccess, showError } = useToast();
-  const [showAll, setShowAll] = useState(false);
+  // Always show all inspections (requirement change)
 
   const fetchInspections = async () => {
     try {
-      const data = showAll ? await getAllInspections() : await getInspections();
+      const data = await getAllInspections();
       setInspections(data || []);
     } catch (error: any) {
       console.error('Error fetching inspections:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          'Failed to fetch inspections. Please try again.';
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch inspections. Please try again.';
       showError('Failed to Load', errorMessage);
-      setInspections([]); // Set empty array on error
+      setInspections([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchInspections();
-  }, [showAll]);
+  useEffect(() => { fetchInspections(); }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -99,18 +95,10 @@ const Inspections: React.FC = () => {
     <div>
       <div className="sm:flex sm:items-center mb-8">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">{showAll ? 'All Inspections' : 'My Inspections'}</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            {showAll ? 'Viewing every inspector\'s inspections' : 'View and manage your inspection activities'}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">All Inspections</h1>
+          <p className="mt-2 text-sm text-gray-700">Viewing every inspector's inspections</p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex space-x-3">
-          <button
-            onClick={() => { setShowAll(s => !s); setLoading(true); }}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            {showAll ? 'Show Mine' : 'Show All'}
-          </button>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -141,9 +129,7 @@ const Inspections: React.FC = () => {
                       <p className="text-sm font-medium text-gray-900 flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-mono px-2 py-0.5 rounded bg-gray-100 border border-gray-300 text-gray-700">ID:{inspection.id}</span>
                         {inspection.locationType} - {inspection.locationIdentifier}
-                        {showAll && (
-                          <span className="text-xs px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700">Inspector: {inspection.inspectorName} (#{inspection.inspectorId})</span>
-                        )}
+                        <span className="text-xs px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700">Inspector: {inspection.inspectorName} (#{inspection.inspectorId})</span>
                       </p>
                       <p className="text-sm text-gray-500">
                         Started: {formatDate(inspection.startedAt)}

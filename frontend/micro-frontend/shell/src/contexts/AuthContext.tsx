@@ -9,11 +9,16 @@ export interface User {
   isActive: boolean;
 }
 
+export interface LoginResult {
+  success: boolean;
+  message?: string;
+}
+
 export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<boolean>;
   getAuthToken: () => string | null;
@@ -53,36 +58,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return response;
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<LoginResult> => {
     try {
-      setIsLoading(true);
       const response = await makeAuthenticatedRequest(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.user) {
-          setUser(data.user);
-          
-          // Store access token in both sessionStorage and localStorage for compatibility
-          // Broadcast login event (no tokens stored client-side; cookies carry auth)
-          window.postMessage({ 
-            type: 'AUTH_LOGIN', 
-            user: data.user
-          }, '*');
-          
-          return true;
-        }
+      // Try to parse JSON even on error to get message
+      let data: any = null;
+      try { data = await response.json(); } catch (_) { /* ignore parse errors */ }
+
+      if (response.ok && data?.success && data?.user) {
+        setUser(data.user);
+        window.postMessage({ type: 'AUTH_LOGIN', user: data.user }, '*');
+        return { success: true };
       }
-      return false;
-    } catch (error) {
+
+      // Determine message
+      const message = data?.message || (response.status === 401 ? 'Invalid email or password' : 'Login failed');
+      return { success: false, message };
+  } catch (error) {
       console.error('Login error:', error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+      return { success: false, message: 'Network error. Please try again.' };
+  }
   };
 
   const logout = async (): Promise<void> => {

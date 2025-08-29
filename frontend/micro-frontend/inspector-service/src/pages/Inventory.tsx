@@ -109,6 +109,24 @@ const Inventory: React.FC = () => {
     }
   };
 
+  // Ensure currency always shows as LKR even if a cached $ formatted string slips through
+  const formatLKR = (value: number) => {
+    try {
+      let out = formatCurrency(value);
+      // If output already starts with LKR, return
+      if (/^\s*LKR/i.test(out)) return out.replace(/^\s*/, '');
+      // If it contains a $ sign, strip leading non-digits and prepend LKR
+      if (out.includes('$')) {
+        const numeric = out.replace(/^[^0-9.-]+/, '');
+        return 'LKR ' + numeric;
+      }
+      // Fallback: format directly with Intl for LKR
+      return new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(value);
+    } catch {
+      return 'LKR ' + value.toFixed(2);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -212,7 +230,7 @@ const Inventory: React.FC = () => {
                     </span>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                    <span>Price: {item.price != null ? formatCurrency(item.price) : 'N/A'}</span>
+                    <span>Price: {item.price != null ? formatLKR(item.price) : 'N/A'}</span>
                     <span className={`px-2 py-1 rounded text-xs ${
                       item.status === 'IN_STOCK' ? 'bg-green-100 text-green-800' :
                       item.status === 'LOW_STOCK' ? 'bg-yellow-100 text-yellow-800' :
