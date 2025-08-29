@@ -1,14 +1,15 @@
 package com.example.hotel_inventory.repository;
 
-import com.example.hotel_inventory.model.Inspection;
-import com.example.hotel_inventory.model.User;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.example.hotel_inventory.model.Inspection;
+import com.example.hotel_inventory.model.User;
 
 @Repository
 public interface InspectionRepository extends JpaRepository<Inspection, Long> {
@@ -18,6 +19,9 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
     List<Inspection> findByStatusOrderByCreatedAtDesc(Inspection.InspectionStatus status);
     
     List<Inspection> findByLocationTypeAndLocationIdentifier(String locationType, String locationIdentifier);
+
+    // All inspections ordered newest first
+    List<Inspection> findAllByOrderByCreatedAtDesc();
     
     @Query("SELECT i FROM Inspection i WHERE i.inspector = :inspector AND i.status = :status")
     List<Inspection> findByInspectorAndStatus(@Param("inspector") User inspector, 

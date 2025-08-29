@@ -3,6 +3,15 @@ import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { apiService, Table, Badge } from '@hotel-inventory/shared-lib';
 import { InventoryItem, Category, Supplier, TableColumn, InventoryItemForm } from '@hotel-inventory/shared-lib';
 import { formatCurrency, formatDate } from '@hotel-inventory/shared-lib';
+
+// Ensures any legacy $ formatted values are displayed as LKR
+const toLKR = (amount: number) => {
+  const base = formatCurrency(amount);
+  if (base.startsWith('$')) {
+    return 'LKR ' + base.substring(1).trim();
+  }
+  return base;
+};
 import { useToast } from '../components/ToastContainer';
 import { useConfirmation } from '../components/ConfirmationModal';
 
@@ -355,7 +364,7 @@ const InventoryManagement: React.FC = () => {
     {
       header: 'Price',
       accessor: 'price',
-      render: (item) => formatCurrency(item.price)
+      render: (item) => toLKR(item.price)
     },
     {
       header: 'Status',

@@ -17,6 +17,9 @@ interface ItemRequest {
   inventoryItemId: number;
   itemName: string;
   requestedQuantity: number;
+  // Defensive alias properties in case backend sends different key names
+  quantity?: number;
+  qty?: number;
   locationType: string;
   locationIdentifier: string;
   reason: string;
@@ -55,8 +58,10 @@ const ItemRequests: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchJson('/item-requests');
-      setRequests(data);
+  const data = await fetchJson('/item-requests');
+  // Debug log to inspect payload shape
+  console.debug('Fetched item requests:', data);
+  setRequests(data);
     } catch (err) {
       console.error('Error fetching item requests:', err);
       setError('Failed to load item requests. Please try again.');
@@ -202,99 +207,95 @@ const ItemRequests: React.FC = () => {
           <div className="text-center py-12">
             <Package className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No pending requests</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              There are no item requests waiting for approval.
-            </p>
+            <p className="mt-1 text-sm text-gray-500">There are no item requests waiting for approval.</p>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-200">
-            {requests.map((request) => (
-              <li key={request.id} className="px-6 py-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <h3 className="text-lg font-medium text-gray-900 truncate">
-                            {request.itemName}
-                          </h3>
-                          <div className="ml-3">
-                            {getStatusBadge(request.status)}
-                          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested By</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested At</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map(request => (
+                  <tr key={request.id} className="align-top">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="font-medium">{request.itemName}</div>
+                      {request.reason && (
+                        <div className="mt-1 text-xs text-gray-500">
+                          <strong>Reason:</strong> {request.reason}
                         </div>
-                        
-                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="flex items-center text-sm text-gray-500">
-                            <User className="w-4 h-4 mr-2" />
-                            Requested by: {request.inspectorName}
-                          </div>
-                          
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Package className="w-4 h-4 mr-2" />
-                            Quantity: {request.requestedQuantity}
-                          </div>
-                          
-                          <div className="flex items-center text-sm text-gray-500">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            Location: {request.locationType} - {request.locationIdentifier}
-                          </div>
-                          
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Clock className="w-4 h-4 mr-2" />
-                            Requested: {formatDate(request.createdAt)}
-                          </div>
+                      )}
+                      {request.approvalNotes && (
+                        <div className="mt-1 text-xs text-gray-500">
+                          <strong>Notes:</strong> {request.approvalNotes}
                         </div>
-                        
-                        {request.reason && (
-                          <div className="mt-3">
-                            <p className="text-sm text-gray-700">
-                              <strong>Reason:</strong> {request.reason}
-                            </p>
-                          </div>
-                        )}
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      <div className="flex items-center text-gray-700">
+                        <User className="w-4 h-4 mr-2 text-gray-400" /> {request.inspectorName}
                       </div>
-                    </div>
-                  </div>
-                  
-                  {request.status === 'PENDING' && (
-                    <div className="flex space-x-3 ml-6">
-                      <button
-                        onClick={() => handleApprove(request.id)}
-                        disabled={processingId === request.id}
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                      >
-                        {processingId === request.id ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          <>
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Approve
-                          </>
-                        )}
-                      </button>
-                      
-                      <button
-                        onClick={() => setShowRejectModal(request.id)}
-                        disabled={processingId === request.id}
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                      >
-                        <XCircle className="w-4 h-4 mr-1" />
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </div>
-                
-                {request.approvalNotes && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                    <p className="text-sm text-gray-700">
-                      <strong>Notes:</strong> {request.approvalNotes}
-                    </p>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      <div className="flex items-center">
+                        <Package className="w-4 h-4 mr-2 text-gray-400" />
+                        {request.requestedQuantity ?? (request.quantity ?? (request.qty ?? '—'))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      <div className="flex items-center">
+                        <MapPin className="w-4 h-4 mr-2 text-gray-400" /> {request.locationType} - {request.locationIdentifier}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-2 text-gray-400" /> {formatDate(request.createdAt)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {getStatusBadge(request.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {request.status === 'PENDING' ? (
+                        <div className="flex space-x-3">
+                          <button
+                            onClick={() => handleApprove(request.id)}
+                            disabled={processingId === request.id}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                          >
+                            {processingId === request.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-1" /> Approve
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setShowRejectModal(request.id)}
+                            disabled={processingId === request.id}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                          >
+                            <XCircle className="w-4 h-4 mr-1" /> Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-xs">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

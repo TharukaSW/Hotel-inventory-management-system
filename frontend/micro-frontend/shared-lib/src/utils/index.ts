@@ -18,10 +18,15 @@ export const formatDateTime = (date: string | Date): string => {
   });
 };
 
+// Formats a number as Sri Lankan Rupees (LKR).
+// Uses en-LK locale to ensure proper grouping and currency symbol (Rs.).
 export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
+  if (amount == null || isNaN(amount)) return 'LKR 0.00';
+  return new Intl.NumberFormat('en-LK', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'LKR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(amount);
 };
 

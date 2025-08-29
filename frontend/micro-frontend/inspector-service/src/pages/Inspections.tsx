@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Eye, CheckCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
-import { getInspections } from '../services/inspectorService';
+import { getInspections, getAllInspections } from '../services/inspectorService';
 import { useToast } from '../components/Toast';
 
 type InspectionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
@@ -25,10 +25,11 @@ const Inspections: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { showSuccess, showError } = useToast();
+  const [showAll, setShowAll] = useState(false);
 
   const fetchInspections = async () => {
     try {
-      const data = await getInspections();
+      const data = showAll ? await getAllInspections() : await getInspections();
       setInspections(data || []);
     } catch (error: any) {
       console.error('Error fetching inspections:', error);
@@ -45,7 +46,7 @@ const Inspections: React.FC = () => {
 
   useEffect(() => {
     fetchInspections();
-  }, []);
+  }, [showAll]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -98,12 +99,18 @@ const Inspections: React.FC = () => {
     <div>
       <div className="sm:flex sm:items-center mb-8">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">My Inspections</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{showAll ? 'All Inspections' : 'My Inspections'}</h1>
           <p className="mt-2 text-sm text-gray-700">
-            View and manage your inspection activities
+            {showAll ? 'Viewing every inspector\'s inspections' : 'View and manage your inspection activities'}
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex space-x-3">
+          <button
+            onClick={() => { setShowAll(s => !s); setLoading(true); }}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            {showAll ? 'Show Mine' : 'Show All'}
+          </button>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -131,8 +138,12 @@ const Inspections: React.FC = () => {
                   <div className="flex items-center">
                     {getStatusIcon(inspection.status)}
                     <div className="ml-3">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-mono px-2 py-0.5 rounded bg-gray-100 border border-gray-300 text-gray-700">ID:{inspection.id}</span>
                         {inspection.locationType} - {inspection.locationIdentifier}
+                        {showAll && (
+                          <span className="text-xs px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700">Inspector: {inspection.inspectorName} (#{inspection.inspectorId})</span>
+                        )}
                       </p>
                       <p className="text-sm text-gray-500">
                         Started: {formatDate(inspection.startedAt)}

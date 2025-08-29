@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Package, Filter } from 'lucide-react';
+import { Search, Package } from 'lucide-react';
 import { getAllInventoryItems, searchInventoryItems, getLowStockInventoryItems, getInventoryItemsByStatus } from '../services/inspectorService';
+import { formatCurrency } from '@hotel-inventory/shared-lib';
 
 interface InventoryItem {
   id: number;
@@ -211,7 +212,7 @@ const Inventory: React.FC = () => {
                     </span>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                    <span>Price: ${item.price?.toFixed(2) || 'N/A'}</span>
+                    <span>Price: {item.price != null ? formatCurrency(item.price) : 'N/A'}</span>
                     <span className={`px-2 py-1 rounded text-xs ${
                       item.status === 'IN_STOCK' ? 'bg-green-100 text-green-800' :
                       item.status === 'LOW_STOCK' ? 'bg-yellow-100 text-yellow-800' :

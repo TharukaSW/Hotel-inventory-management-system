@@ -3,12 +3,13 @@ import {
   Package, 
   Users, 
   AlertTriangle,
-  DollarSign,
+  Banknote,
   ShoppingCart,
   Building2
 } from 'lucide-react';
 import { apiService } from '@hotel-inventory/shared-lib';
 import { InventoryItem } from '@hotel-inventory/shared-lib';
+import { formatCurrency } from '@hotel-inventory/shared-lib';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({
@@ -21,6 +22,8 @@ const Dashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [recentItems, setRecentItems] = useState<InventoryItem[]>([]);
+  const [recentItemRequests, setRecentItemRequests] = useState<any[]>([]);
+  const [prevStats, setPrevStats] = useState<typeof stats | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
 
@@ -36,15 +39,28 @@ const Dashboard: React.FC = () => {
       const lowStockItems = items.filter(item => item.quantity <= 10 && item.quantity > 0);
       const outOfStockItems = items.filter(item => item.quantity === 0);
       const totalValue = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      setStats({
+      const newStats = {
         totalItems: items.length,
         totalCategories: categories.length,
         totalSuppliers: suppliers.length,
         lowStockItems: lowStockItems.length,
         outOfStockItems: outOfStockItems.length,
         totalValue
-      });
+      };
+      setPrevStats(prev => prev ? { ...stats } : prevStats); // keep first prev as null
+      setStats(newStats);
       setRecentItems(items.slice(0, 5));
+      // Fetch recent activity (items + item requests)
+      try {
+        const activityResp = await fetch('http://localhost:8082/api/admin/recent-activity', { credentials: 'include' });
+        if (activityResp.ok) {
+          const activityData = await activityResp.json();
+            setRecentItems(activityData.recentItems || []);
+            setRecentItemRequests(activityData.recentItemRequests || []);
+        }
+      } catch (e) {
+        // ignore activity errors
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -113,56 +129,85 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  const statCards = [
-    {
-      name: 'Total Items',
-      value: stats.totalItems,
-      icon: Package,
-      color: 'bg-blue-500',
-      change: '+12%',
-      changeType: 'positive'
-    },
-    {
-      name: 'Total Categories',
-      value: stats.totalCategories,
-      icon: Building2,
-      color: 'bg-green-500',
-      change: '+5%',
-      changeType: 'positive'
-    },
-    {
-      name: 'Total Suppliers',
-      value: stats.totalSuppliers,
-      icon: Users,
-      color: 'bg-purple-500',
-      change: '+8%',
-      changeType: 'positive'
-    },
-    {
-      name: 'Low Stock Items',
-      value: stats.lowStockItems,
-      icon: AlertTriangle,
-      color: 'bg-yellow-500',
-      change: '-3%',
-      changeType: 'negative'
-    },
-    {
-      name: 'Out of Stock',
-      value: stats.outOfStockItems,
-      icon: ShoppingCart,
-      color: 'bg-red-500',
-      change: '+2%',
-      changeType: 'negative'
-    },
-    {
-      name: 'Total Value',
-      value: `$${stats.totalValue.toLocaleString()}`,
-      icon: DollarSign,
-      color: 'bg-indigo-500',
-      change: '+15%',
-      changeType: 'positive'
+  const computeChange = (current: number, prev: number | undefined | null) => {
+    if (!prev || prev === 0) return { change: '+0%', changeType: 'positive' as const };
+    const diff = ((current - prev) / prev) * 100;
+    const rounded = Math.round(diff);
+    return {
+      change: `${diff >= 0 ? '+' : ''} ${rounded}%`,
+      changeType: diff >= 0 ? 'positive' as const : 'negative' as const
+    };
+  };
+
+  // Ensures currency always displays as LKR even if an old cached formatter returns '$'
+  const toLKR = (amount: number) => {
+    const base = formatCurrency(amount);
+    if (base.startsWith('$')) {
+      // Replace leading $ with LKR and space
+      return 'LKR ' + base.substring(1).trim();
     }
-  ];
+    return base;
+  };
+
+  const statCards = (() => {
+    const ps = prevStats;
+    const totalItemsChange = computeChange(stats.totalItems, ps?.totalItems);
+    const totalCategoriesChange = computeChange(stats.totalCategories, ps?.totalCategories);
+    const totalSuppliersChange = computeChange(stats.totalSuppliers, ps?.totalSuppliers);
+    const lowStockChange = computeChange(stats.lowStockItems, ps?.lowStockItems);
+    const outOfStockChange = computeChange(stats.outOfStockItems, ps?.outOfStockItems);
+    const totalValueChange = computeChange(stats.totalValue, ps?.totalValue);
+    return [
+      {
+        name: 'Total Items',
+        value: stats.totalItems,
+        icon: Package,
+        color: 'bg-blue-500',
+        change: totalItemsChange.change,
+        changeType: totalItemsChange.changeType
+      },
+      {
+        name: 'Total Categories',
+        value: stats.totalCategories,
+        icon: Building2,
+        color: 'bg-green-500',
+        change: totalCategoriesChange.change,
+        changeType: totalCategoriesChange.changeType
+      },
+      {
+        name: 'Total Suppliers',
+        value: stats.totalSuppliers,
+        icon: Users,
+        color: 'bg-purple-500',
+        change: totalSuppliersChange.change,
+        changeType: totalSuppliersChange.changeType
+      },
+      {
+        name: 'Low Stock Items',
+        value: stats.lowStockItems,
+        icon: AlertTriangle,
+        color: 'bg-yellow-500',
+        change: lowStockChange.change,
+        changeType: lowStockChange.changeType
+      },
+      {
+        name: 'Out of Stock',
+        value: stats.outOfStockItems,
+        icon: ShoppingCart,
+        color: 'bg-red-500',
+        change: outOfStockChange.change,
+        changeType: outOfStockChange.changeType
+      },
+      {
+        name: 'Total Value',
+  value: toLKR(stats.totalValue),
+  icon: Banknote,
+        color: 'bg-indigo-500',
+        change: totalValueChange.change,
+        changeType: totalValueChange.changeType
+      }
+    ];
+  })();
 
   if (loading && isAuthenticated) {
     return (
@@ -223,7 +268,7 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <p className="font-medium text-gray-900">Qty: {item.quantity}</p>
-                    <p className="text-sm text-gray-600">${item.price}</p>
+                    <p className="text-sm text-gray-600">{toLKR(item.price || 0)}</p>
                   </div>
                 </div>
               ))}
@@ -263,27 +308,27 @@ const Dashboard: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
           <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">New item request approved</p>
-                <p className="text-xs text-gray-500">2 minutes ago</p>
+            {recentItems.slice(0,3).map(item => (
+              <div key={`item-${item.id}`} className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">New inventory item: {item.name}</p>
+                  <p className="text-xs text-gray-500">Category: {item.category?.name || 'N/A'}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Inventory updated by admin</p>
-                <p className="text-xs text-gray-500">15 minutes ago</p>
+            ))}
+            {recentItemRequests.slice(0,3).map(req => (
+              <div key={`req-${req.id}`} className="flex items-start space-x-3">
+                <div className={`w-2 h-2 rounded-full mt-2 ${req.status === 'APPROVED' ? 'bg-green-500' : req.status === 'REJECTED' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Item request {req.status.toLowerCase()}: {req.itemName}</p>
+                  <p className="text-xs text-gray-500">Qty: {req.requestedQuantity} • Location: {req.locationType} {req.locationIdentifier}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Low stock alert triggered</p>
-                <p className="text-xs text-gray-500">1 hour ago</p>
-              </div>
-            </div>
+            ))}
+            {recentItems.length === 0 && recentItemRequests.length === 0 && (
+              <p className="text-sm text-gray-500">No recent activity.</p>
+            )}
           </div>
         </div>
       </div>

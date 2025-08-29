@@ -1,18 +1,25 @@
 package com.example.hotel_inventory.controller;
 
-import com.example.hotel_inventory.dto.ItemRequestDto;
-import com.example.hotel_inventory.model.InventoryItem;
-import com.example.hotel_inventory.service.AdminInspectorService;
-import com.example.hotel_inventory.service.InventoryService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.hotel_inventory.dto.ItemRequestDto;
+import com.example.hotel_inventory.model.InventoryItem;
+import com.example.hotel_inventory.service.AdminInspectorService;
+import com.example.hotel_inventory.service.InventoryService;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -23,6 +30,28 @@ public class AdminController {
 
     @Autowired
     private AdminInspectorService adminInspectorService;
+
+    @GetMapping("/recent-activity")
+    public ResponseEntity<Map<String, Object>> getRecentActivity() {
+        try {
+            List<InventoryItem> allItems = inventoryService.getAllItems();
+            List<InventoryItem> recentItems = allItems.stream()
+                .sorted((a,b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .limit(5)
+                .toList();
+            List<ItemRequestDto> itemRequests = adminInspectorService.getItemRequests();
+            List<ItemRequestDto> recentRequests = itemRequests.stream()
+                .sorted((a,b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .limit(5)
+                .toList();
+            Map<String, Object> activity = new HashMap<>();
+            activity.put("recentItems", recentItems);
+            activity.put("recentItemRequests", recentRequests);
+            return ResponseEntity.ok(activity);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getAdminStats() {

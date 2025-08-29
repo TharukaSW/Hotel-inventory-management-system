@@ -94,6 +94,16 @@ export const getInspections = async () => {
     }
 };
 
+export const getAllInspections = async () => {
+    try {
+        const response = await apiClient.get('/inspections/all');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching all inspections', error);
+        throw error;
+    }
+};
+
 export const getInspectionById = async (id: number) => {
     try {
         const response = await apiClient.get(`/inspections/${id}`);

@@ -1,18 +1,34 @@
 package com.example.hotel_inventory.service.impl;
 
-import com.example.hotel_inventory.dto.*;
-import com.example.hotel_inventory.dto.request.CreateInspectionRequest;
-import com.example.hotel_inventory.dto.request.CreateItemRequestRequest;
-import com.example.hotel_inventory.model.*;
-import com.example.hotel_inventory.repository.*;
-import com.example.hotel_inventory.service.InspectorService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.hotel_inventory.dto.CategoryDto;
+import com.example.hotel_inventory.dto.InspectionDto;
+import com.example.hotel_inventory.dto.InspectionItemDto;
+import com.example.hotel_inventory.dto.InventoryItemDto;
+import com.example.hotel_inventory.dto.ItemRequestDto;
+import com.example.hotel_inventory.dto.SupplierDto;
+import com.example.hotel_inventory.dto.UserDto;
+import com.example.hotel_inventory.dto.request.CreateInspectionRequest;
+import com.example.hotel_inventory.dto.request.CreateItemRequestRequest;
+import com.example.hotel_inventory.model.Inspection;
+import com.example.hotel_inventory.model.InspectionItem;
+import com.example.hotel_inventory.model.InventoryItem;
+import com.example.hotel_inventory.model.ItemRequest;
+import com.example.hotel_inventory.model.User;
+import com.example.hotel_inventory.repository.InspectionItemRepository;
+import com.example.hotel_inventory.repository.InspectionRepository;
+import com.example.hotel_inventory.repository.InventoryItemRepository;
+import com.example.hotel_inventory.repository.ItemRequestRepository;
+import com.example.hotel_inventory.repository.UserRepository;
+import com.example.hotel_inventory.service.InspectorService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -133,6 +149,15 @@ public class InspectorServiceImpl implements InspectorService {
                 .map(this::convertToInspectionDto)
                 .collect(Collectors.toList());
     }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<InspectionDto> getAllInspections() {
+                List<Inspection> inspections = inspectionRepository.findAllByOrderByCreatedAtDesc();
+                return inspections.stream()
+                                .map(this::convertToInspectionDto)
+                                .collect(Collectors.toList());
+        }
 
     @Override
     @Transactional(readOnly = true)

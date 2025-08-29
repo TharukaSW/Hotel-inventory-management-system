@@ -1,17 +1,20 @@
 package com.example.hotel_inventory.service;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.hotel_inventory.dto.UserDto;
 import com.example.hotel_inventory.dto.request.CreateUserRequest;
 import com.example.hotel_inventory.dto.request.UpdateUserRequest;
 import com.example.hotel_inventory.model.User;
 import com.example.hotel_inventory.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +22,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
@@ -47,10 +51,11 @@ public class UserService {
             throw new RuntimeException("Email already exists: " + request.getEmail());
         }
 
-        User user = User.builder()
+    User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
-                .password(hashPassword(request.getPassword())) // In production, use proper password hashing
+        // Store encoded (hashed) password
+        .password(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .role(request.getRole())
@@ -83,7 +88,7 @@ public class UserService {
 
         // Update other fields if provided
         if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
-            user.setPassword(hashPassword(request.getPassword()));
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
         if (request.getFirstName() != null) {
             user.setFirstName(request.getFirstName());
@@ -117,10 +122,5 @@ public class UserService {
         return userRepository.existsByEmail(email);
     }
 
-    // Simple password hashing - In production, use BCrypt or similar
-    private String hashPassword(String password) {
-        // For development purposes, we'll just store the password as-is
-        // In production, use: passwordEncoder.encode(password)
-        return password;
-    }
+    // Password encoding is handled via Spring's PasswordEncoder bean (BCrypt)
 }

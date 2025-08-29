@@ -56,28 +56,18 @@ function AppContent() {
   useEffect(() => {
     if (isAuthenticated && user?.role && location.pathname === '/') {
       let target = '/'
-      switch (user.role) {
-        case 'ADMIN':
-        case 'STOCK_MANAGER':
-          target = '/admin'; break
-        case 'FRONT_DESK':
-          target = '/frontdesk'; break
-        case 'INSPECTOR':
-          target = '/inspector'; break
-        default:
-          target = '/'
-      }
-      if (target !== location.pathname) {
-        navigate(target, { replace: true })
-      }
+      if (user.role === 'ADMIN' || user.role === 'STOCK_MANAGER') target = '/admin'
+      else if (user.role === 'FRONT_DESK') target = '/frontdesk'
+      else if (user.role === 'INSPECTOR') target = '/inspector'
+      if (target !== location.pathname) navigate(target, { replace: true })
     }
   }, [isAuthenticated, user, location.pathname, navigate])
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 w-full">
         <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-100vw mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 items-center justify-between">
               <h1 className="text-xl font-semibold text-gray-900">Hotel Inventory Management</h1>
               <div className="flex items-center gap-4">
@@ -123,7 +113,7 @@ function AppContent() {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto p-4">
+        <main className="w-full mx-auto p-4">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route

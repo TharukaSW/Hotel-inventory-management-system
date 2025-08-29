@@ -6,7 +6,9 @@ import { useConfirmation } from '../components/ConfirmationModal';
 interface ItemRequestDto {
   id: number;
   itemName: string;
-  quantity: number;
+  // Backend sends 'requestedQuantity'; keep 'quantity' for table, normalize after fetch
+  quantity?: number;
+  requestedQuantity?: number;
   reason: string;
   status: string;
   requestedAt?: string;
@@ -28,7 +30,11 @@ const ItemRequests: React.FC = () => {
     setError(null);
     try {
       const data = await apiService.getItemRequests();
-      setRequests(data);
+      const normalized = (Array.isArray(data) ? data : []).map((d: any) => ({
+        ...d,
+        quantity: d.quantity ?? d.requestedQuantity ?? d.requested_quantity
+      }));
+      setRequests(normalized);
     } catch (e: any) {
       if (e?.message?.includes('403')) {
         setError('Forbidden (403) - Check backend auth rules or login.');
@@ -100,7 +106,7 @@ const ItemRequests: React.FC = () => {
                   <tr key={r.id} className='hover:bg-gray-50'>
                     <td className='px-4 py-2 text-sm text-gray-500'>#{r.id}</td>
                     <td className='px-4 py-2 text-sm font-medium text-gray-900'>{r.itemName}</td>
-                    <td className='px-4 py-2 text-sm text-gray-700'>{r.quantity}</td>
+                    <td className='px-4 py-2 text-sm text-gray-700'>{r.quantity ?? r.requestedQuantity ?? '—'}</td>
                     <td className='px-4 py-2 text-sm text-gray-600 max-w-xs truncate' title={r.reason}>{r.reason}</td>
                     <td className='px-4 py-2 text-sm text-gray-600'>{r.inspectorName || '-'}</td>
                     <td className='px-4 py-2 text-sm'>

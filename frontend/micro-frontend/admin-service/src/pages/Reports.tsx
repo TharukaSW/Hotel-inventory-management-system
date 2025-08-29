@@ -3,11 +3,22 @@ import {
   TrendingUp, 
   TrendingDown, 
   Package, 
-  DollarSign,
+  Banknote,
   Download
 } from 'lucide-react';
 import { apiService } from '@hotel-inventory/shared-lib';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { InventoryItem, Category, Supplier } from '@hotel-inventory/shared-lib';
+import { formatCurrency } from '@hotel-inventory/shared-lib';
+// Ensure any lingering $-prefixed formatted amounts are displayed as LKR consistently.
+const toLKR = (amount: number) => {
+  const base = formatCurrency(amount);
+  if (base.startsWith('$')) {
+    return 'LKR ' + base.substring(1).trim();
+  }
+  return base;
+};
 import { useToast } from '../components/ToastContainer';
 
 const Reports: React.FC = () => {
@@ -24,48 +35,68 @@ const Reports: React.FC = () => {
 
   const handleExportReport = async () => {
     try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const marginX = 40;
+      let cursorY = 50;
 
-      // Create and download CSV
-      const csvContent = [
-        ['Report Generated:', new Date().toLocaleDateString()],
-        ['Period:', selectedPeriod],
-        [''],
-        ['Summary'],
-        ['Total Items', totalItems],
-        ['Total Value', `$${totalValue.toLocaleString()}`],
-        ['Low Stock Items', lowStockItems],
-        ['Out of Stock Items', outOfStockItems],
-        [''],
-        ['Inventory Items'],
-        ['ID', 'Name', 'Category', 'Supplier', 'Quantity', 'Price', 'Total Value', 'Status'],
-        ...items.map(item => [
+      // Title
+      doc.setFontSize(18);
+      doc.text('Inventory Report', marginX, cursorY);
+      doc.setFontSize(11);
+      cursorY += 18;
+      doc.text(`Generated: ${new Date().toLocaleString()}`, marginX, cursorY);
+      cursorY += 14;
+      doc.text(`Period: ${selectedPeriod}`, marginX, cursorY);
+
+      // Summary Table
+      cursorY += 24;
+      autoTable(doc, {
+        startY: cursorY,
+        head: [['Metric', 'Value']],
+        body: [
+          ['Total Items', String(totalItems)],
+          ['Total Value', toLKR(totalValue)],
+          ['Low Stock Items', String(lowStockItems)],
+          ['Out of Stock Items', String(outOfStockItems)]
+        ],
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [41, 128, 185] }
+      });
+      cursorY = (doc as any).lastAutoTable.finalY + 25;
+
+      // Inventory Items Table (paginate automatically)
+      autoTable(doc, {
+        startY: cursorY,
+        head: [['ID','Name','Category','Supplier','Qty','Price','Total','Status']],
+        body: items.map(item => [
           item.id,
           item.name,
           item.category?.name || 'N/A',
           item.supplier?.name || 'N/A',
           item.quantity,
-          item.price,
-          item.price * item.quantity,
+          toLKR(item.price),
+          toLKR(item.price * item.quantity),
           item.quantity === 0 ? 'Out of Stock' : item.quantity <= 10 ? 'Low Stock' : 'In Stock'
-        ])
-      ].map(row => row.join(',')).join('\n');
+        ]),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [52, 73, 94] },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: { 0: { cellWidth: 32 }, 4: { cellWidth: 34 } }
+      });
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `inventory-report-${selectedPeriod}-${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      // Footer (page numbers)
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.getWidth() - marginX - 60, doc.internal.pageSize.getHeight() - 20);
       }
-      
-      showSuccess('Report exported successfully!');
+
+      doc.save(`inventory-report-${selectedPeriod}-${new Date().toISOString().split('T')[0]}.pdf`);
+      showSuccess('PDF report generated');
     } catch (error) {
-      console.error('Error exporting report:', error);
-      showError('Failed to export report', 'Please try again.');
+      console.error('Error generating PDF report:', error);
+      showError('Failed to export PDF', 'Please try again.');
     }
   };
 
@@ -168,11 +199,11 @@ const Reports: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="p-2 rounded-full bg-green-100">
-              <DollarSign className="h-6 w-6 text-green-600" />
+              <Banknote className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Value</p>
-              <p className="text-2xl font-semibold text-gray-900">${totalValue.toLocaleString()}</p>
+              <p className="text-2xl font-semibold text-gray-900">{toLKR(totalValue)}</p>
               <p className="text-xs text-green-600">+8% from last month</p>
             </div>
           </div>
@@ -227,7 +258,7 @@ const Reports: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium text-gray-900">{stat.count} items</div>
-                    <div className="text-xs text-gray-500">${stat.value.toLocaleString()}</div>
+                    <div className="text-xs text-gray-500">{toLKR(stat.value)}</div>
                   </div>
                 </div>
               ))}
@@ -255,7 +286,7 @@ const Reports: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium text-gray-900">{stat.count} items</div>
-                    <div className="text-xs text-gray-500">${stat.value.toLocaleString()}</div>
+                    <div className="text-xs text-gray-500">{toLKR(stat.value)}</div>
                   </div>
                 </div>
               ))}

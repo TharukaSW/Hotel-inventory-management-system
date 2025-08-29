@@ -1,0 +1,3 @@
+-- Schema snapshot (not auto-run). Keep for reference/migrations.
+-- Destructive drops removed to avoid wiping existing data at startup.
+-- Use a migration tool (Flyway/Liquibase) for future changes.

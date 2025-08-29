@@ -1,12 +1,13 @@
 package com.example.hotel_inventory.service;
 
-import com.example.hotel_inventory.dto.*;
+import java.util.List;
+
+import com.example.hotel_inventory.dto.InspectionDto;
+import com.example.hotel_inventory.dto.InspectionItemDto;
+import com.example.hotel_inventory.dto.InventoryItemDto;
+import com.example.hotel_inventory.dto.ItemRequestDto;
 import com.example.hotel_inventory.dto.request.CreateInspectionRequest;
 import com.example.hotel_inventory.dto.request.CreateItemRequestRequest;
-import com.example.hotel_inventory.model.ItemRequest;
-import com.example.hotel_inventory.model.Inspection;
-
-import java.util.List;
 
 public interface InspectorService {
     
@@ -21,6 +22,7 @@ public interface InspectorService {
     InspectionDto updateInspection(Long inspectionId, InspectionDto inspectionDto);
     InspectionDto completeInspection(Long inspectionId);
     List<InspectionDto> getMyInspections(Long inspectorId);
+    List<InspectionDto> getAllInspections();
     InspectionDto getInspectionById(Long inspectionId);
     
     // Inspection Item Management
