@@ -36,11 +36,13 @@ public class AdminController {
         try {
             List<InventoryItem> allItems = inventoryService.getAllItems();
             List<InventoryItem> recentItems = allItems.stream()
+                .filter(i -> i.getCreatedAt() != null)
                 .sorted((a,b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .limit(5)
                 .toList();
             List<ItemRequestDto> itemRequests = adminInspectorService.getItemRequests();
             List<ItemRequestDto> recentRequests = itemRequests.stream()
+                .filter(r -> r.getCreatedAt() != null)
                 .sorted((a,b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .limit(5)
                 .toList();
@@ -49,7 +51,11 @@ public class AdminController {
             activity.put("recentItemRequests", recentRequests);
             return ResponseEntity.ok(activity);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            // Return structured error instead of empty 500
+            Map<String, Object> error = new HashMap<>();
+            error.put("message", "Failed to load recent activity");
+            error.put("error", e.getMessage());
+            return ResponseEntity.internalServerError().body(error);
         }
     }
 

@@ -44,7 +44,11 @@ export default function Login() {
     setError('')
 
     try {
-      const response = await fetch('http://localhost:8082/api/auth/login', {
+  // Determine API base (must be configured; no localhost fallback)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rBase = (import.meta as any).env?.VITE_API_BASE_URL || (window as any)?.__API_BASE_URL__ || '';
+  const base = rBase.replace(/\/$/, '');
+  const response = await fetch(`${base}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

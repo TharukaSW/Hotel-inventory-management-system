@@ -44,7 +44,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   
   const isAuthenticated = !!user;
 
-  const API_BASE_URL = 'http://localhost:8082/api';
+  // Central API base (must be supplied via VITE_API_BASE_URL or window.__API_BASE_URL__)
+  // Re-use shared-lib config if available without creating circular deps.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const runtimeApiBase = (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) as string | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const envApiBase = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
+  const API_BASE_URL = (envApiBase || runtimeApiBase || '').replace(/\/$/, '');
 
   const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
     const response = await fetch(url, {

@@ -29,8 +29,11 @@ export interface InspectionDto {
     inspectionItems?: InspectionItemDto[];
 }
 
+// Determine API base dynamically (must be set; no hardcoded localhost fallback)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _apiBaseInspector = (import.meta as any).env?.VITE_API_BASE_URL || (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) || '';
 const apiClient = axios.create({
-    baseURL: 'http://localhost:8082/api/inspector',
+    baseURL: _apiBaseInspector ? `${_apiBaseInspector.replace(/\/$/, '')}/inspector` : '',
     headers: {
         'Content-Type': 'application/json',
     },

@@ -17,6 +17,8 @@ import com.example.hotel_inventory.dto.CategoryDto;
 import com.example.hotel_inventory.dto.request.CreateCategoryRequest;
 import com.example.hotel_inventory.model.Category;
 import com.example.hotel_inventory.repository.CategoryRepository;
+import com.example.hotel_inventory.repository.InventoryItemRepository;
+import com.example.hotel_inventory.model.InventoryItem;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryRepository categoryRepository;
+    private final InventoryItemRepository inventoryItemRepository;
 
     // Public (auth removed)
     @PostMapping
@@ -75,6 +78,12 @@ public class CategoryController {
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         if (!categoryRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
+        }
+        // Detach related inventory items first (set their category to null) to avoid FK constraint errors
+        List<InventoryItem> relatedItems = inventoryItemRepository.findByCategoryId(id);
+        if (!relatedItems.isEmpty()) {
+            relatedItems.forEach(item -> item.setCategory(null));
+            inventoryItemRepository.saveAll(relatedItems);
         }
         categoryRepository.deleteById(id);
         return ResponseEntity.noContent().build();

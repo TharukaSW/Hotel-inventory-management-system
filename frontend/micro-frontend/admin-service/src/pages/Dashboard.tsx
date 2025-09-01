@@ -52,11 +52,16 @@ const Dashboard: React.FC = () => {
       setRecentItems(items.slice(0, 5));
       // Fetch recent activity (items + item requests)
       try {
-        const activityResp = await fetch('http://localhost:8082/api/admin/recent-activity', { credentials: 'include' });
-        if (activityResp.ok) {
-          const activityData = await activityResp.json();
+        // Dynamic API base (must be provided)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || (window as any)?.__API_BASE_URL__ || '';
+        if (apiBase) {
+          const activityResp = await fetch(`${apiBase.replace(/\/$/, '')}/admin/recent-activity`, { credentials: 'include' });
+          if (activityResp.ok) {
+            const activityData = await activityResp.json();
             setRecentItems(activityData.recentItems || []);
             setRecentItemRequests(activityData.recentItemRequests || []);
+          }
         }
       } catch (e) {
         // ignore activity errors

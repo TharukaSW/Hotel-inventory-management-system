@@ -1,6 +1,9 @@
 import { Booking, CreateBookingRequest, UpdateBookingRequest, ApiResponse } from '../types';
 
-const API_BASE_URL = 'http://localhost:8082/api/frontdesk';
+// Determine runtime/env API base (required).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _apiBaseFrontdesk = (import.meta as any).env?.VITE_API_BASE_URL || (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) || '';
+const API_BASE_URL = _apiBaseFrontdesk ? `${_apiBaseFrontdesk.replace(/\/$/, '')}/frontdesk` : '';
 
 class FrontdeskService {
   private async request<T>(url: string, options?: RequestInit): Promise<T> {

@@ -39,7 +39,10 @@ const ItemRequests: React.FC = () => {
   const [rejectionNotes, setRejectionNotes] = useState<{ [key: number]: string }>({});
   const [showRejectModal, setShowRejectModal] = useState<number | null>(null);
 
-  const apiBase = 'http://localhost:8082/api/admin';
+  // Dynamic API base (required). Provide VITE_API_BASE_URL in environment.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const _apiBase = (import.meta as any).env?.VITE_API_BASE_URL || (window as any)?.__API_BASE_URL__ || '';
+  const apiBase = _apiBase ? `${_apiBase.replace(/\/$/, '')}/admin` : '';
 
   const fetchJson = async (path: string, init?: RequestInit) => {
     const res = await fetch(`${apiBase}${path}`, {

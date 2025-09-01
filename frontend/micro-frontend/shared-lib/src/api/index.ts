@@ -9,7 +9,7 @@ import {
   StockTransactionForm
 } from '../types';
 
-const API_BASE_URL = 'http://localhost:8082/api';
+import { API_BASE_URL } from '../config';
 
 class ApiService {
   // Cookie-based auth only; no bearer header. JWT is sent automatically via HttpOnly cookie.

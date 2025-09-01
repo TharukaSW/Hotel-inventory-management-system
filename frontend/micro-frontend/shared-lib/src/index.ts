@@ -9,3 +9,5 @@ export * from './components';
 
 // Export API service
 export { default as apiService } from './api'; 
+// Export config
+export * from './config';
